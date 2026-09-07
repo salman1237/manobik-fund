@@ -15,7 +15,7 @@
                 @error('requesterPhone') <p class="text-xs text-danger mt-1.5">{{ $message }}</p> @enderror
             </div>
 
-            <div class="grid grid-cols-2 gap-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                     <x-input-label value="Blood Group Needed" />
                     <select wire:model="bloodGroup" class="mt-2 block w-full rounded-xl border-warm-border text-sm focus:border-primary focus:ring-primary">

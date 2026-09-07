@@ -6,12 +6,12 @@
     </x-slot>
 
     <div class="max-w-4xl flex flex-col gap-6">
-        <div class="bg-primary-light border border-warm-border-soft rounded-2xl px-6 py-5 flex items-center justify-between">
+        <div class="bg-primary-light border border-warm-border-soft rounded-2xl px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
                 <p class="text-sm font-semibold text-primary-dark">Humanity Badges</p>
                 <p class="text-xs text-primary-dark/70">Earned automatically on completed donations</p>
             </div>
-            <p class="font-serif text-2xl font-bold text-primary-dark">{{ $points }} pts</p>
+            <p class="font-serif text-2xl font-bold text-primary-dark shrink-0">{{ $points }} pts</p>
         </div>
 
         @if ($donations->isEmpty())

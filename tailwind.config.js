@@ -16,6 +16,14 @@ export default {
 
     theme: {
         extend: {
+            // Half-steps beyond Tailwind's default scale (which stops at 3.5)
+            // used throughout the redesign for pixel-accurate spacing lifted
+            // from the design mockups (e.g. 22px card padding, 18px pill padding).
+            spacing: {
+                '4.5': '1.125rem',
+                '5.5': '1.375rem',
+                '6.5': '1.625rem',
+            },
             fontFamily: {
                 // Public Sans for UI/body text (replaces the default Breeze
                 // Figtree); Newsreader is the warm serif used for headlines

@@ -17,10 +17,10 @@
 <x-public-layout :title="$campaign->title">
     <div class="py-10">
         <div class="max-w-6xl mx-auto px-6 sm:px-10 lg:px-16">
-            <div class="flex items-center gap-2 text-[13px] text-ink-faint mb-6">
-                <a href="{{ route('campaigns.index') }}" wire:navigate class="text-ink-faint hover:text-primary">Campaigns</a>
-                <span>/</span>
-                <span class="text-ink">{{ $campaign->title }}</span>
+            <div class="flex items-center gap-2 text-[13px] text-ink-faint mb-6 min-w-0">
+                <a href="{{ route('campaigns.index') }}" wire:navigate class="text-ink-faint hover:text-primary shrink-0">Campaigns</a>
+                <span class="shrink-0">/</span>
+                <span class="text-ink truncate">{{ $campaign->title }}</span>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-10">
@@ -59,13 +59,13 @@
                             </div>
                             <ul class="flex flex-col gap-3.5">
                                 @foreach ($campaign->disbursements as $disbursement)
-                                    <li class="flex items-center justify-between text-sm border-b border-warm-border-soft pb-3.5 last:border-0 last:pb-0">
+                                    <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm border-b border-warm-border-soft pb-3.5 last:border-0 last:pb-0">
                                         <div>
                                             <p class="text-ink font-semibold">{{ number_format($disbursement->amount / 100, 2) }} BDT disbursed</p>
                                             <p class="text-ink-faint text-xs mt-0.5">{{ $disbursement->disbursed_at->format('M j, Y') }}</p>
                                         </div>
                                         <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($disbursement->deposit_slip_file) }}"
-                                           target="_blank" rel="noopener" class="text-primary font-semibold hover:text-primary-dark text-xs">
+                                           target="_blank" rel="noopener" class="text-primary font-semibold hover:text-primary-dark text-xs shrink-0">
                                             View Deposit Slip
                                         </a>
                                     </li>

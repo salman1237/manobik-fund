@@ -68,9 +68,9 @@
                 <h3 class="font-serif text-lg font-semibold text-ink mb-4">Treatment Milestones</h3>
                 <ul class="flex flex-col gap-2.5">
                     @foreach ($data['milestones'] as $milestone)
-                        <li class="flex items-center justify-between text-sm">
+                        <li class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
                             <span class="text-ink-muted">{{ $milestone['label'] }}</span>
-                            <span class="text-ink-faint">{{ $milestone['value'] }} &middot; {{ \Illuminate\Support\Carbon::parse($milestone['recorded_at'])->format('M j') }}</span>
+                            <span class="text-ink-faint shrink-0">{{ $milestone['value'] }} &middot; {{ \Illuminate\Support\Carbon::parse($milestone['recorded_at'])->format('M j') }}</span>
                         </li>
                     @endforeach
                 </ul>

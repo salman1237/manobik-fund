@@ -1,10 +1,10 @@
 <x-public-layout title="Blood Requests">
     <div class="py-10">
         <div class="max-w-2xl mx-auto px-6 sm:px-10 lg:px-16">
-            <div class="flex items-center justify-between mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                 <h1 class="font-serif text-3xl font-semibold text-ink">{{ __('Open Blood Requests') }}</h1>
                 <a href="{{ route('blood.requests.create') }}" wire:navigate
-                   class="inline-flex items-center px-5 py-2.5 bg-danger text-white text-sm font-bold rounded-xl hover:opacity-90 transition">
+                   class="inline-flex items-center justify-center px-5 py-2.5 bg-danger text-white text-sm font-bold rounded-xl hover:opacity-90 transition shrink-0 self-start">
                     Post a Request
                 </a>
             </div>

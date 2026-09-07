@@ -43,7 +43,7 @@
                     <x-input-error :messages="$errors->get('description')" class="mt-2" />
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <x-input-label for="targetAmountTaka" value="Target Amount (BDT)" />
                         <x-text-input id="targetAmountTaka" type="number" step="0.01" wire:model="targetAmountTaka" class="block mt-2 w-full" />
@@ -56,9 +56,9 @@
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2.5 pt-3">
-                    <x-secondary-button type="button" wire:click="saveAndExit">Save & Exit</x-secondary-button>
-                    <x-primary-button type="submit">Save & Continue</x-primary-button>
+                <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-3">
+                    <x-secondary-button type="button" wire:click="saveAndExit" class="justify-center">Save & Exit</x-secondary-button>
+                    <x-primary-button type="submit" class="justify-center">Save & Continue</x-primary-button>
                 </div>
             </form>
         @elseif ($step === 2)
@@ -71,7 +71,7 @@
                     <x-input-error :messages="$errors->get('hospitalName')" class="mt-2" />
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <x-input-label for="latitude" value="Latitude" />
                         <x-text-input id="latitude" type="number" step="0.0000001" wire:model="latitude" class="block mt-2 w-full" />
@@ -84,11 +84,11 @@
                     </div>
                 </div>
 
-                <div class="flex justify-between gap-2.5 pt-3">
-                    <x-secondary-button type="button" wire:click="goToStep(1)">Back</x-secondary-button>
-                    <div class="flex gap-2.5">
-                        <x-secondary-button type="button" wire:click="saveAndExit">Save & Exit</x-secondary-button>
-                        <x-primary-button type="submit">Save & Continue</x-primary-button>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-2.5 pt-3">
+                    <x-secondary-button type="button" wire:click="goToStep(1)" class="justify-center order-3 sm:order-1">Back</x-secondary-button>
+                    <div class="flex flex-col-reverse sm:flex-row gap-2.5 order-1 sm:order-2">
+                        <x-secondary-button type="button" wire:click="saveAndExit" class="justify-center">Save & Exit</x-secondary-button>
+                        <x-primary-button type="submit" class="justify-center">Save & Continue</x-primary-button>
                     </div>
                 </div>
             </form>
@@ -126,11 +126,11 @@
                     </div>
                 @endif
 
-                <div class="flex justify-between gap-2.5 pt-3">
-                    <x-secondary-button type="button" wire:click="goToStep({{ $this->isMedicalCategory() ? 2 : 1 }})">Back</x-secondary-button>
-                    <div class="flex gap-2.5">
-                        <x-secondary-button type="button" wire:click="saveAndExit">Save & Exit</x-secondary-button>
-                        <x-primary-button type="submit">Save & Continue</x-primary-button>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-2.5 pt-3">
+                    <x-secondary-button type="button" wire:click="goToStep({{ $this->isMedicalCategory() ? 2 : 1 }})" class="justify-center order-3 sm:order-1">Back</x-secondary-button>
+                    <div class="flex flex-col-reverse sm:flex-row gap-2.5 order-1 sm:order-2">
+                        <x-secondary-button type="button" wire:click="saveAndExit" class="justify-center">Save & Exit</x-secondary-button>
+                        <x-primary-button type="submit" class="justify-center">Save & Continue</x-primary-button>
                     </div>
                 </div>
             </form>
@@ -151,7 +151,7 @@
                     <x-input-error :messages="$errors->get('bankAccountNumber')" class="mt-2" />
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <x-input-label for="bankName" value="Bank Name" />
                         <x-text-input id="bankName" wire:model="bankName" class="block mt-2 w-full" />
@@ -168,9 +168,9 @@
                     <x-text-input id="bankRoutingNumber" wire:model="bankRoutingNumber" class="block mt-2 w-full" />
                 </div>
 
-                <div class="flex justify-between gap-2.5 pt-3">
-                    <x-secondary-button type="button" wire:click="goToStep(3)">Back</x-secondary-button>
-                    <x-primary-button type="submit">Submit for Verification</x-primary-button>
+                <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-2.5 pt-3">
+                    <x-secondary-button type="button" wire:click="goToStep(3)" class="justify-center">Back</x-secondary-button>
+                    <x-primary-button type="submit" class="justify-center">Submit for Verification</x-primary-button>
                 </div>
             </form>
         @endif

@@ -13,7 +13,7 @@
             </select>
         </div>
 
-        <div class="grid grid-cols-2 gap-3.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
                 <x-input-label value="Latitude" />
                 <x-text-input type="number" step="0.0000001" wire:model="latitude" class="mt-2 block w-full" />

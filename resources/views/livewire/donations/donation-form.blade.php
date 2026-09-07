@@ -24,7 +24,7 @@
             </select>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
                 <x-input-label value="Amount" />
                 <x-text-input type="number" step="0.01" wire:model="amount" class="mt-2 block w-full" />

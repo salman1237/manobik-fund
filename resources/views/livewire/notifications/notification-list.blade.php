@@ -1,5 +1,5 @@
 <div>
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 class="font-serif text-2xl font-semibold text-ink">Notifications</h1>
         <button wire:click="markAllAsRead" class="text-[13.5px] font-bold text-primary hover:text-primary-dark">
             Mark all as read

@@ -1,5 +1,5 @@
 <div>
-    <div class="bg-warm-surface border border-warm-border-soft rounded-2xl p-6 mb-8 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+    <div class="bg-warm-surface border border-warm-border-soft rounded-2xl p-6 mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         <div>
             <x-input-label value="Blood Group" />
             <select wire:model.live="bloodGroup" class="mt-2 block w-full rounded-xl border-warm-border text-sm focus:border-primary focus:ring-primary">

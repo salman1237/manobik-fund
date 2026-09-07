@@ -22,7 +22,7 @@ new class extends Component
                     <span class="font-serif text-lg font-semibold text-ink">Manobik Fund</span>
                 </a>
 
-                <div class="hidden sm:flex sm:space-x-8">
+                <div class="hidden lg:flex lg:space-x-8">
                     <x-nav-link :href="route('campaigns.index')" :active="request()->routeIs('campaigns.*') || request()->routeIs('home')" wire:navigate>
                         {{ __('Browse Campaigns') }}
                     </x-nav-link>
@@ -35,7 +35,7 @@ new class extends Component
                 </div>
             </div>
 
-            <div class="hidden sm:flex sm:items-center sm:gap-3">
+            <div class="hidden lg:flex lg:items-center lg:gap-3">
                 @auth
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
@@ -54,18 +54,18 @@ new class extends Component
                 @endauth
             </div>
 
-            <div class="-me-2 flex items-center sm:hidden">
+            <div class="-me-2 flex items-center lg:hidden">
                 <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-lg text-ink-faint hover:text-ink hover:bg-warm-alt">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        <path :class="open ? 'hidden' : 'inline-flex'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path :class="open ? 'inline-flex' : 'hidden'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
         </div>
     </div>
 
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+    <div :class="open ? 'block' : 'hidden'" class="lg:hidden" @click="open = false">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('campaigns.index')" :active="request()->routeIs('campaigns.*')" wire:navigate>
                 {{ __('Browse Campaigns') }}

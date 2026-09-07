@@ -7,12 +7,12 @@
 
     <div class="max-w-4xl flex flex-col gap-6">
         <div class="bg-warm-surface border border-warm-border-soft rounded-2xl p-6">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="text-sm font-semibold text-ink-faint">
                     {{ ucfirst($campaign->category) }} &middot; {{ ucfirst(str_replace('_', ' ', $campaign->status)) }}
                 </span>
                 @if ($campaign->isEditableBySeeker())
-                    <a href="{{ route('seeker.campaigns.edit', $campaign) }}" wire:navigate class="text-sm font-semibold text-primary hover:text-primary-dark">Edit</a>
+                    <a href="{{ route('seeker.campaigns.edit', $campaign) }}" wire:navigate class="text-sm font-semibold text-primary hover:text-primary-dark shrink-0">Edit</a>
                 @endif
             </div>
 

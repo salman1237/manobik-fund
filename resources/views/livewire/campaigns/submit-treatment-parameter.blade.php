@@ -4,7 +4,7 @@
             <h4 class="font-serif font-semibold text-ink">Log a Treatment Update</h4>
             <p class="text-xs text-ink-faint">New entries appear publicly only after admin verification.</p>
 
-            <div class="grid grid-cols-2 gap-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                     <x-input-label value="Type" />
                     <select wire:model="parameterType" class="mt-2 block w-full rounded-xl border-warm-border text-sm focus:border-primary focus:ring-primary">
@@ -30,7 +30,7 @@
                 @error('label') <p class="text-xs text-danger mt-1.5">{{ $message }}</p> @enderror
             </div>
 
-            <div class="grid grid-cols-2 gap-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                     <x-input-label value="Value" />
                     <x-text-input type="text" wire:model="value" class="mt-2 block w-full" />

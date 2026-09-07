@@ -8,7 +8,7 @@
 @endphp
 
 <div class="flex flex-col gap-6">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <h1 class="font-serif text-2xl font-semibold text-ink mb-1">My Campaigns</h1>
             <p class="text-sm text-ink-faint">Track how each of your campaigns is progressing.</p>
@@ -16,7 +16,7 @@
 
         @if (auth()->user()->isDonationSeeker())
             <a href="{{ route('seeker.campaigns.create') }}" wire:navigate
-               class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-dark transition">
+               class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-dark transition shrink-0">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
                 Start a Campaign
             </a>
@@ -32,8 +32,8 @@
     @else
         <div class="flex flex-col gap-3.5">
             @foreach ($campaigns as $campaign)
-                <div class="bg-warm-surface border border-warm-border-soft rounded-2xl px-6.5 py-5.5 flex items-center gap-5.5">
-                    <div class="w-[72px] h-[72px] rounded-[13px] shrink-0" style="background: {{ $categoryGradients[$campaign->category] ?? $categoryGradients['treatment'] }};"></div>
+                <div class="bg-warm-surface border border-warm-border-soft rounded-2xl px-6.5 py-5.5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5.5">
+                    <div class="hidden sm:block w-[72px] h-[72px] rounded-[13px] shrink-0" style="background: {{ $categoryGradients[$campaign->category] ?? $categoryGradients['treatment'] }};"></div>
 
                     <div class="flex-1 min-w-0">
                         <div class="flex flex-wrap items-center gap-2.5 mb-1.5">

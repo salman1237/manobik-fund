@@ -36,15 +36,15 @@ new class extends Component
     </div>
 
     <!-- Sidebar -->
-    <div :class="{'block': mobileOpen, 'hidden': ! mobileOpen}"
-         class="hidden lg:flex lg:flex-col w-full lg:w-64 lg:shrink-0 bg-warm-surface border-b lg:border-b-0 lg:border-r border-warm-border-soft lg:h-screen lg:sticky lg:top-0 px-5 py-6">
+    <div :class="mobileOpen ? 'flex' : 'hidden'"
+         class="flex-col lg:flex lg:flex-col w-full lg:w-64 lg:shrink-0 bg-warm-surface border-b lg:border-b-0 lg:border-r border-warm-border-soft lg:h-screen lg:sticky lg:top-0 px-5 py-6">
 
         <a href="{{ route('home') }}" wire:navigate class="hidden lg:flex items-center gap-2 px-2 pb-7">
             <x-application-logo class="h-6 w-6 text-accent" />
             <span class="font-serif text-lg font-semibold text-ink">Manobik Fund</span>
         </a>
 
-        <nav class="flex flex-col gap-1">
+        <nav class="flex flex-col gap-1" @click="mobileOpen = false">
             <a href="{{ route('dashboard') }}" wire:navigate
                @class([
                    'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition',
