@@ -122,6 +122,11 @@ class Campaign extends Model implements HasMedia
         return $this->hasMany(FieldVisitReport::class)->latest();
     }
 
+    public function donations(): HasMany
+    {
+        return $this->hasMany(Donation::class);
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('cover')->singleFile();

@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'shurjopay' => [
+        'username' => env('SHURJOPAY_MERCHANT_USERNAME'),
+        'password' => env('SHURJOPAY_MERCHANT_PASSWORD'),
+        'merchant_key' => env('SHURJOPAY_MERCHANT_KEY'),
+        'base_url' => env('SHURJOPAY_API_BASE_URL', 'https://sandbox.shurjopayment.com/api'),
+    ],
+
 ];

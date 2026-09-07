@@ -93,4 +93,9 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     {
         return $this->hasMany(\App\Models\Campaign::class, 'seeker_id');
     }
+
+    public function donations(): HasMany
+    {
+        return $this->hasMany(\App\Models\Donation::class);
+    }
 }
