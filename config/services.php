@@ -46,6 +46,7 @@ return [
         'password' => env('SHURJOPAY_MERCHANT_PASSWORD'),
         'merchant_key' => env('SHURJOPAY_MERCHANT_KEY'),
         'base_url' => env('SHURJOPAY_API_BASE_URL', 'https://sandbox.shurjopayment.com/api'),
+        'prefix' => env('SHURJOPAY_TRANSACTION_PREFIX', 'MF'),
     ],
 
 ];

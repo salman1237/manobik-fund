@@ -13,12 +13,10 @@ use RuntimeException;
  * No official Laravel package exists, so this is the "thin HTTP service
  * class" the spec calls for.
  *
- * NOTE: field names below follow ShurjoPay's publicly documented v2 flow
- * (get_token -> secret-pay -> verification) as of this writing. Confirm
- * exact field/response names against the live sandbox once real merchant
- * credentials are available (spec's Client Decisions log: real key wiring
- * deferred to Phase 4 completion) - integration test payloads here are
- * illustrative, not captured from a real sandbox response.
+ * Field names verified directly against the sandbox (sandbox.shurjopayment.com)
+ * on 2026-09-07 with real merchant credentials - get_token, secret-pay, and
+ * verification were each called live and every field below matches the
+ * actual response shape (verification returns a JSON list with one entry).
  */
 class ShurjoPayGatewayService implements PaymentGateway
 {
@@ -29,25 +27,37 @@ class ShurjoPayGatewayService implements PaymentGateway
 
     protected function getToken(): array
     {
-        return Cache::remember('shurjopay.token', now()->addMinutes(50), function () {
-            $response = Http::asJson()->post($this->baseUrl().'/get_token', [
-                'username' => config('services.shurjopay.username'),
-                'password' => config('services.shurjopay.password'),
-            ])->throw();
+        if ($cached = Cache::get('shurjopay.token')) {
+            return $cached;
+        }
 
-            return $response->json();
-        });
+        $response = Http::asJson()->post($this->baseUrl().'/get_token', [
+            'username' => config('services.shurjopay.username'),
+            'password' => config('services.shurjopay.password'),
+        ])->throw()->json();
+
+        // Sandbox-observed expires_in is 900s (15 min) - cache for a bit
+        // less than that so we never hand out a token that expires
+        // mid-request, with a floor so a short/odd value from the gateway
+        // can't force a get_token call on every single request.
+        $ttl = max(60, (int) ($response['expires_in'] ?? 900) - 60);
+        Cache::put('shurjopay.token', $response, now()->addSeconds($ttl));
+
+        return $response;
     }
 
     public function createCheckout(Donation $donation, string $successUrl, string $cancelUrl): string
     {
         $token = $this->getToken();
-        $executeUrl = $token['execute_url'] ?? $this->baseUrl();
+        // execute_url from get_token IS the full secret-pay endpoint
+        // already (confirmed against the live sandbox) - do not append
+        // '/secret-pay' to it, that produces a doubled, invalid path.
+        $executeUrl = $token['execute_url'] ?? $this->baseUrl().'/secret-pay';
 
         $response = Http::withToken($token['token'] ?? null)
             ->asJson()
-            ->post($executeUrl.'/secret-pay', [
-                'prefix' => 'MF',
+            ->post($executeUrl, [
+                'prefix' => config('services.shurjopay.prefix'),
                 'token' => $token['token'] ?? null,
                 'store_id' => $token['store_id'] ?? null,
                 'amount' => number_format($donation->amount / 100, 2, '.', ''),
@@ -84,11 +94,13 @@ class ShurjoPayGatewayService implements PaymentGateway
     public function verify(string $orderId): array
     {
         $token = $this->getToken();
-        $executeUrl = $token['execute_url'] ?? $this->baseUrl();
 
+        // Verification is a base-API endpoint, not under execute_url
+        // (execute_url points at secret-pay specifically - confirmed
+        // against the live sandbox).
         $response = Http::withToken($token['token'] ?? null)
             ->asJson()
-            ->post($executeUrl.'/verification', [
+            ->post($this->baseUrl().'/verification', [
                 'order_id' => $orderId,
             ])->throw()->json();
 

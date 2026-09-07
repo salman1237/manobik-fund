@@ -213,9 +213,13 @@ class Phase4DonationsTest extends TestCase
 
     public function test_the_shurjopay_return_page_completes_the_donation_on_successful_verification(): void
     {
+        // execute_url deliberately points at secret-pay, exactly as the real
+        // sandbox returns it - verification must hit the base API URL, not
+        // execute_url + '/verification' (a real bug this test guards
+        // against; see ShurjoPayGatewayService).
         Http::fake([
-            '*/get_token' => Http::response(['token' => 'tok_abc', 'execute_url' => 'https://sandbox.shurjopayment.com/api'], 200),
-            '*/verification' => Http::response([[
+            '*/get_token' => Http::response(['token' => 'tok_abc', 'execute_url' => 'https://sandbox.shurjopayment.com/api/secret-pay'], 200),
+            'https://sandbox.shurjopayment.com/api/verification' => Http::response([[
                 'sp_code' => 1000,
                 'bank_trx_id' => 'BANK123',
             ]], 200),
@@ -236,6 +240,35 @@ class Phase4DonationsTest extends TestCase
         $response->assertOk();
         $this->assertSame(Donation::STATUS_COMPLETED, $donation->fresh()->status);
         $this->assertSame(20000, $campaign->fresh()->raised_amount);
+        Http::assertSent(fn ($request) => $request->url() === 'https://sandbox.shurjopayment.com/api/verification');
+    }
+
+    public function test_shurjopay_checkout_creation_posts_directly_to_the_execute_url_without_doubling_the_path(): void
+    {
+        Http::fake([
+            '*/get_token' => Http::response(['token' => 'tok_abc', 'store_id' => 1, 'execute_url' => 'https://sandbox.shurjopayment.com/api/secret-pay'], 200),
+            'https://sandbox.shurjopayment.com/api/secret-pay' => Http::response([
+                'checkout_url' => 'https://sandbox.securepay.shurjopayment.com/spaycheckout/?token=tok_abc',
+                'sp_order_id' => 'NOKabc123',
+            ], 200),
+        ]);
+
+        $campaign = Campaign::factory()->published()->create();
+        $donation = Donation::factory()->create([
+            'campaign_id' => $campaign->id,
+            'gateway' => Donation::GATEWAY_SHURJOPAY,
+            'status' => Donation::STATUS_PENDING,
+        ]);
+
+        $checkoutUrl = app(ShurjoPayGatewayService::class)->createCheckout(
+            $donation,
+            'https://app.test/success',
+            'https://app.test/cancel'
+        );
+
+        $this->assertSame('https://sandbox.securepay.shurjopayment.com/spaycheckout/?token=tok_abc', $checkoutUrl);
+        $this->assertSame('NOKabc123', $donation->fresh()->transaction_id);
+        Http::assertSent(fn ($request) => $request->url() === 'https://sandbox.shurjopayment.com/api/secret-pay');
     }
 
     public function test_the_shurjopay_return_page_does_not_complete_the_donation_on_failed_verification(): void
