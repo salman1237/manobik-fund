@@ -11,4 +11,9 @@ interface PaymentGateway
      * donation and return the URL the donor should be redirected to.
      */
     public function createCheckout(Donation $donation, string $successUrl, string $cancelUrl): string;
+
+    /**
+     * Refund a completed donation through the gateway that processed it.
+     */
+    public function refund(Donation $donation): void;
 }

@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Models\Donation;
 use App\Notifications\DonationReceiptNotification;
+use App\Services\RewardPointsService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\Notification;
  */
 class DonationCompletionService
 {
+    public function __construct(protected RewardPointsService $rewardPoints) {}
+
     public function complete(Donation $donation, ?array $gatewayMeta = null): Donation
     {
         if ($donation->isCompleted()) {
@@ -31,6 +34,8 @@ class DonationCompletionService
             if ($donation->campaign) {
                 $donation->campaign->increment('raised_amount', $donation->amount);
             }
+
+            $this->rewardPoints->awardForDonation($donation);
         });
 
         Notification::route('mail', $donation->donor_email)

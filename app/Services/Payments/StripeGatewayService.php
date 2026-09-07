@@ -45,4 +45,14 @@ class StripeGatewayService implements PaymentGateway
 
         return $session->url;
     }
+
+    public function refund(Donation $donation): void
+    {
+        /** @var Session $session */
+        $session = $this->client->checkout->sessions->retrieve($donation->transaction_id);
+
+        $this->client->refunds->create([
+            'payment_intent' => $session->payment_intent,
+        ]);
+    }
 }

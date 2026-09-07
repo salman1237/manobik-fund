@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Donation extends Model
 {
@@ -55,8 +57,30 @@ class Donation extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function rewardPoint(): HasOne
+    {
+        return $this->hasOne(RewardPoint::class);
+    }
+
+    public function refundRequests(): HasMany
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
+
     public function isCompleted(): bool
     {
         return $this->status === self::STATUS_COMPLETED;
+    }
+
+    /**
+     * Refundable if completed, has a linked user (spec §3: refunds are an
+     * Authenticated User capability), and has no request already in flight
+     * or already approved.
+     */
+    public function isRefundEligible(): bool
+    {
+        return $this->isCompleted()
+            && $this->user_id !== null
+            && ! $this->refundRequests()->whereIn('status', [RefundRequest::STATUS_PENDING, RefundRequest::STATUS_APPROVED])->exists();
     }
 }

@@ -31,6 +31,11 @@ class Phase4DonationsTest extends TestCase
 
                 return $this->url;
             }
+
+            public function refund(Donation $donation): void
+            {
+                //
+            }
         };
     }
 

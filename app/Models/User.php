@@ -98,4 +98,24 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     {
         return $this->hasMany(\App\Models\Donation::class);
     }
+
+    public function rewardPoints(): HasMany
+    {
+        return $this->hasMany(\App\Models\RewardPoint::class);
+    }
+
+    public function refundRequests(): HasMany
+    {
+        return $this->hasMany(\App\Models\RefundRequest::class);
+    }
+
+    /**
+     * Total "Humanity Badges" points, always summed live from reward_points
+     * rather than a cached counter column - keeps this consistent with the
+     * client's "no fake/static numbers" stance applied elsewhere.
+     */
+    public function humanityBadgePoints(): int
+    {
+        return (int) $this->rewardPoints()->sum('points');
+    }
 }

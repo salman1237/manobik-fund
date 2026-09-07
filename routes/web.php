@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DonationController;
+use App\Http\Controllers\MyDonationsController;
 use App\Http\Controllers\Public\CampaignController as PublicCampaignController;
 use App\Http\Controllers\Seeker\CampaignController as SeekerCampaignController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
@@ -24,6 +25,10 @@ Route::get('dashboard', DashboardController::class)
 Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
+
+Route::get('my-donations', [MyDonationsController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('donations.index');
 
 Route::middleware(['auth'])->prefix('seeker/campaigns')->name('seeker.campaigns.')->group(function () {
     Route::get('/', [SeekerCampaignController::class, 'index'])->name('index');

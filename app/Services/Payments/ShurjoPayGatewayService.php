@@ -97,6 +97,21 @@ class ShurjoPayGatewayService implements PaymentGateway
         return is_array($response) && array_is_list($response) ? ($response[0] ?? []) : $response;
     }
 
+    /**
+     * ShurjoPay does document a refund endpoint, but its exact request
+     * shape hasn't been verified against a live sandbox (same caveat as
+     * createCheckout/verify above) - refusing to guess at fields for an
+     * operation that moves real money. Wire this up once real merchant
+     * credentials are available; until then, gateway-refund approvals on
+     * ShurjoPay donations should be handled manually by Executive Admin.
+     */
+    public function refund(Donation $donation): void
+    {
+        throw new RuntimeException(
+            'ShurjoPay refund integration is not yet implemented - exact API fields are unverified without live sandbox credentials. Process this refund manually for now.'
+        );
+    }
+
     public function isSuccessful(array $verificationResult): bool
     {
         return (int) ($verificationResult['sp_code'] ?? 0) === 1000;

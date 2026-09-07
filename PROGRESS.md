@@ -24,7 +24,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 | 4 | Public Campaign Pages & Donations | ✅ | (next commit) | See Testing Log below |
 | 5 | Real-Time Medical Parameter Tracking | ✅ | (next commit) | See Testing Log below |
 | 6 | Disbursement & Transparency | ✅ | (next commit) | See Testing Log below |
-| 7 | Reward Points & Refunds | ⬜ | | |
+| 7 | Reward Points & Refunds | ✅ | (next commit) | See Testing Log below |
 | 8 | Blood Donation Network | ⬜ | | |
 | 9 | Ambulance Directory | ⬜ | | |
 | 10 | Emergency Response, Medical Camps & Education Modules | ⬜ | | |
@@ -124,7 +124,21 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - Automated: `tests/Feature/Phase6DisbursementTest.php` (8 tests / 25 assertions) - the service's happy path and both guard failures, fund-utilization entry creation with correct Taka-to-poisha conversion, disburse-ability restricted to Executive/Super Admin, Filament action visibility by campaign status, an actual file upload through the Filament action (`Storage::fake('public')`), and the public transparency section rendering with the real disbursed amount and a working deposit-slip link. Full suite: **100 passed / 290 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
+### Phase 7 — Reward Points & Refunds (2026-09-07)
+
+- `reward_points`/`refund_requests` tables/models per spec §5, plus two fields not in the spec's minimal schema but required to actually implement what Phase 7 literally asks for ("gateway refund **or** credit redirect to another campaign"): `refund_requests.resolution_type` (`gateway_refund`/`credit_redirect`) and `redirect_campaign_id`. `reward_points.donation_id` has a DB-level unique constraint - a second defense (beyond the app-level check) against ever double-awarding points for the same donation.
+- `RewardPointsService::awardForDonation()` is called from inside `DonationCompletionService::complete()` (same transaction as the raised-amount increment), so points are awarded automatically exactly when a donation completes - no separate cron/queue step. Guest donations (`user_id` null) award nothing, since there's no account to credit. The reward percentage is read from Settings (`donation_reward_percent`, defaulting to 1%) via the Phase 0 `setting()` helper, satisfying "configurable % in Settings" literally rather than hardcoding it.
+- `Donation::isRefundEligible()` centralizes the eligibility rule (completed, has a linked user, no pending/approved request already in flight) so both the policy and the service check the exact same condition - avoids the classic bug where a UI-level check and a service-level guard drift apart over time.
+- `RefundRequestService` implements both approval paths: `approveWithGatewayRefund()` calls the donation's own gateway (`PaymentGateway::refund()`, added to the same interface Phase 4 built) then marks the donation `refunded` and decrements the campaign's `raised_amount`; `approveWithCreditRedirect()` instead moves the raised amount from the original campaign to a different one and reassigns the donation's `campaign_id`, leaving `status` as `completed` since the money wasn't actually returned. `StripeGatewayService::refund()` calls Stripe's real refund API (low-risk, well-documented surface, same confidence level as the Phase 4 Checkout Session code); `ShurjoPayGatewayService::refund()` deliberately throws rather than guessing at unverified refund-API field names - flagged in PROGRESS.md rather than shipped as silently-broken code.
+- `RefundRequestPolicy::resolve()` restricts approve/reject to `executive_admin`/`super_admin` only, matching spec §3's role table ("Manages refunds/redirects for cancelled or over-funded campaigns" is an Executive Admin capability, not Verification Admin's).
+- New donor-facing `/my-donations` page: donation history, a "Humanity Badges" points total, and an inline refund-request form (only shown when `isRefundEligible()`). Also added a Humanity Badges display to the existing profile page, per spec Phase 7's explicit requirement - skipped the homepage leaderboard/boost mechanic since the spec itself marks it optional.
+- Filament `RefundRequestResource`: read-only audit trail (no create/edit/delete) with three actions - approve via gateway, approve via campaign-redirect (with a campaign picker), reject with a reason - all hidden once a request is no longer pending.
+- Automated: `tests/Feature/Phase7RewardsAndRefundsTest.php` (15 tests / 32 assertions) - points awarded at the configured percentage, settings-driven percentage changes, guest exclusion, double-completion idempotency, refund eligibility rules, cross-user request denial, duplicate-request blocking, both approval paths (gateway refund via a fake `PaymentGateway` binding, and credit redirect verified by checking both campaigns' `raised_amount`), rejection, policy restriction, Filament action visibility, and the two new pages (`/my-donations`, `/profile`) actually rendering the right numbers over real HTTP requests. Full suite: **115 passed / 322 assertions**.
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
 ## Open Decisions / Follow-ups
+
+- ShurjoPay refunds are unimplemented (`ShurjoPayGatewayService::refund()` throws) pending real sandbox credentials to confirm the refund API's exact field names - Executive Admin should process ShurjoPay refunds manually outside the system until this is wired up.
 
 - **Stripe & ShurjoPay real credentials — still needed.** Phase 4's donation flow is fully built and tested against a `PaymentGateway` interface, but nothing has been verified against a live sandbox. Once test keys are provided: (1) confirm `ShurjoPayGatewayService`'s field names against a real `get_token`/`secret-pay`/`verification` response (see Phase 4 testing log), (2) set a real Stripe webhook endpoint + `STRIPE_WEBHOOK_SECRET` and do one live end-to-end test donation on each gateway.
 - Filament panel structure: starting with **one shared panel** at `/control`, gated by filament-shield (per spec §7). Revisit only if UX demands split panels.
