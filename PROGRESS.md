@@ -20,7 +20,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 | 0 | Project Foundation (Laravel install, permissions, shield, medialibrary, activitylog, roles seeder, settings table) | ✅ | (next commit) | See Testing Log below |
 | 1 | Auth & Panel Scaffolding | ✅ | (next commit) | See Testing Log below |
 | 2 | Campaign Core (Seeker side) | ✅ | (next commit) | See Testing Log below |
-| 3 | Verification Workflow | ⬜ | | |
+| 3 | Verification Workflow | ✅ | (next commit) | See Testing Log below |
 | 4 | Public Campaign Pages & Donations | ⬜ | | |
 | 5 | Real-Time Medical Parameter Tracking | ⬜ | | |
 | 6 | Disbursement & Transparency | ⬜ | | |
@@ -73,8 +73,24 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - Automated: `tests/Feature/Phase2CampaignTest.php` - 8 tests / 27 assertions: unverified-seeker rejection, HTTP-level page rendering (not just component-level, to catch Blade/layout wiring bugs), full 4-step wizard walkthrough (asserts DB state after every step, not just the final one), encryption-at-rest, cross-seeker edit denial, post-draft edit lockout, publish-gated update posting, dashboard scoping. Full suite: **45 passed / 123 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
+### Phase 3 — Verification Workflow (2026-09-07)
+
+- Followed spec §8's explicit instruction to the letter: **wrote and ran the state-machine tests before writing any Filament UI**. `App\Services\CampaignVerificationService` is the single place the `draft -> pending_verification -> field_visit -> executive_review -> published` (with `rejected` reachable from any of the three review stages) transitions happen; every method guards its own preconditions and throws `App\Exceptions\InvalidCampaignTransition` on an invalid call rather than silently no-oping.
+- **Bug caught by the state-machine tests themselves, before any UI existed**: `Campaign::publish()` set `published_at` via mass-update, but `published_at` was missing from the model's `$fillable` array, so it was silently dropped (Laravel doesn't throw on this by default) - `test_publishing_from_executive_review_marks_the_campaign_live` failed on `assertNotNull($result->published_at)`. This is exactly the class of bug spec §8 was warning about, and it was caught at the service layer, before it could reach a Filament button.
+- New: `field_visit_reports` table/model, `campaigns.assigned_volunteer_id` + `volunteer_assigned_at` columns, `notifications` table (Laravel's standard database-notifications table, not previously present in the skeleton).
+- `CampaignPolicy` extended with `assignVolunteer` (verification_admin+), `submitFieldReport` (only the campaign's actually-assigned volunteer), `forwardToExecutive` (verification_admin+), `reject` (verification_admin+), `publish` (executive_admin/super_admin only - matches the spec §3 role table exactly). New `FieldVisitReportPolicy` for the read-only report audit trail.
+- Three notifications (`VolunteerAssignedNotification`, `CampaignRejectedNotification`, `CampaignPublishedNotification`) fire from inside the service on the relevant transitions - mail channel uses the `log` driver in dev (nothing external sent), satisfying spec Phase 3's "notifies Volunteer" requirement without waiting for the full Phase 11 notification system.
+- Every transition is logged via `spatie/laravel-activitylog`'s `activity()` helper with `causedBy()`/`performedOn()` - gives the "full activity log on every transition" spec Phase 3 asks for, queryable later for an audit trail UI.
+- `CampaignResource` (Filament, `/control/campaigns`): **not** a generic CRUD resource - `canCreate()` is hard-disabled (campaigns are only ever created by Seekers via the Phase 2 public wizard) and the generic edit form was removed entirely, because a raw form field bound to `bank_account_details` (an `encrypted:array` cast) would have serialized it as a plain string and silently corrupted the encrypted-array cast on save. Instead: a read-only `infolist()` (Filament\Infolists) for viewing, and dedicated per-transition table actions (Assign Volunteer, Submit Field Report, Forward to Executive, Reject, Publish) that call straight into `CampaignVerificationService`, each gated by both `->visible()` (policy + current status) and the policy check inside the service-backed action itself.
+- `CampaignResource::getEloquentQuery()` scopes Volunteers to `assigned_volunteer_id = auth()->id()` only; `FieldVisitReportResource::getEloquentQuery()` scopes Volunteers to their own submitted reports - matches spec §7's "Volunteers get a heavily restricted view."
+- Authorization is implemented as direct role checks inside hand-written Policies rather than filament-shield's auto-generated per-resource permissions - simpler to read and test directly, at the cost of not using Shield's fine-grained permission-per-role UI. Noted as an open decision below in case granular permission management is wanted later; Shield itself is still installed and still gates panel navigation/access at a coarse level.
+- Automated: `tests/Feature/Phase3VerificationTest.php` (17 tests / 39 assertions) exercises the service directly with no Filament involved - every valid and invalid transition, the full happy path, and policy-level authorization checks. `tests/Feature/Phase3FilamentUiTest.php` (9 tests / 36 assertions) exercises the actual Filament panel over HTTP and via Livewire table-action testing: panel access denial for plain users, volunteer row-scoping, action visibility by role and status, and both infolist view pages rendering without error. Full suite: **72 passed / 203 assertions**.
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
 ## Open Decisions / Follow-ups
 
 - Stripe & ShurjoPay real credentials — deferred to Phase 4, client to provide test keys.
 - Filament panel structure: starting with **one shared panel** at `/control`, gated by filament-shield (per spec §7). Revisit only if UX demands split panels.
 - Theme: light/white everywhere (public site + all Filament panels), per client feedback 2026-09-07.
+- Authorization for Campaign/FieldVisitReport resources uses hand-written role-based Policies rather than filament-shield's generated per-resource permissions (see Phase 3 testing log). Fine for now; revisit if the client wants finer-grained, DB-editable permission assignment per role from the Super Admin panel rather than role checks baked into code.
+- Rejected campaigns are currently a terminal display state (reason shown to the Seeker on their dashboard) — no resubmission flow back to draft yet. Not in spec's explicit Phase 3 scope; flag if the client expects seekers to be able to fix and resubmit a rejected campaign.

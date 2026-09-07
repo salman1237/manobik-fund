@@ -56,6 +56,9 @@ class Campaign extends Model implements HasMedia
         'status',
         'rejection_reason',
         'deadline',
+        'assigned_volunteer_id',
+        'volunteer_assigned_at',
+        'published_at',
     ];
 
     protected function casts(): array
@@ -68,6 +71,7 @@ class Campaign extends Model implements HasMedia
             'raised_amount' => 'integer',
             'deadline' => 'date',
             'published_at' => 'datetime',
+            'volunteer_assigned_at' => 'datetime',
         ];
     }
 
@@ -106,6 +110,16 @@ class Campaign extends Model implements HasMedia
     public function updates(): HasMany
     {
         return $this->hasMany(CampaignUpdate::class)->latest();
+    }
+
+    public function assignedVolunteer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_volunteer_id');
+    }
+
+    public function fieldVisitReports(): HasMany
+    {
+        return $this->hasMany(FieldVisitReport::class)->latest();
     }
 
     public function registerMediaCollections(): void
