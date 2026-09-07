@@ -1,10 +1,7 @@
 <x-public-layout title="Post a Blood Request">
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Post a Blood Request') }}</h2>
-    </x-slot>
-
-    <div class="py-6">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-10">
+        <div class="max-w-2xl mx-auto px-6 sm:px-10 lg:px-16">
+            <h1 class="font-serif text-3xl font-semibold text-ink mb-8">Post a Blood Request</h1>
             <livewire:blood.request-form />
         </div>
     </div>

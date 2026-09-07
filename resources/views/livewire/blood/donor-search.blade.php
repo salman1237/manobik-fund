@@ -1,8 +1,8 @@
 <div>
-    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+    <div class="bg-warm-surface border border-warm-border-soft rounded-2xl p-6 mb-8 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
         <div>
-            <label class="block text-sm font-medium text-gray-700">Blood Group</label>
-            <select wire:model.live="bloodGroup" class="mt-1 block w-full rounded-md border-gray-300">
+            <x-input-label value="Blood Group" />
+            <select wire:model.live="bloodGroup" class="mt-2 block w-full rounded-xl border-warm-border text-sm focus:border-primary focus:ring-primary">
                 <option value="">Any</option>
                 @foreach (\App\Models\BloodDonor::BLOOD_GROUPS as $group)
                     <option value="{{ $group }}">{{ $group }}</option>
@@ -10,37 +10,40 @@
             </select>
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">Your Latitude</label>
-            <input type="number" step="0.0000001" wire:model.live="latitude" class="mt-1 block w-full rounded-md border-gray-300" />
+            <x-input-label value="Your Latitude" />
+            <x-text-input type="number" step="0.0000001" wire:model.live="latitude" class="mt-2 block w-full" />
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">Your Longitude</label>
-            <input type="number" step="0.0000001" wire:model.live="longitude" class="mt-1 block w-full rounded-md border-gray-300" />
+            <x-input-label value="Your Longitude" />
+            <x-text-input type="number" step="0.0000001" wire:model.live="longitude" class="mt-2 block w-full" />
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">Radius (km)</label>
-            <input type="number" wire:model.live="radiusKm" class="mt-1 block w-full rounded-md border-gray-300" />
+            <x-input-label value="Radius (km)" />
+            <x-text-input type="number" wire:model.live="radiusKm" class="mt-2 block w-full" />
         </div>
     </div>
 
     @if ($results->isEmpty())
-        <div class="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+        <div class="bg-warm-surface border border-warm-border-soft rounded-2xl p-10 text-center text-ink-faint">
             Enter a blood group or your location to search for donors.
         </div>
     @else
-        <div class="space-y-3">
+        <div class="flex flex-col gap-3">
             @foreach ($results as $donor)
-                <div class="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-                    <div>
-                        <p class="font-medium text-gray-900">{{ $donor->user->name }} &middot; {{ $donor->blood_group }}</p>
+                <div class="bg-warm-surface border border-warm-border-soft rounded-2xl px-5 py-4.5 flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-[11px] bg-danger-light text-danger flex items-center justify-center font-extrabold text-[13px] shrink-0">
+                        {{ $donor->blood_group }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-ink text-[15px] truncate">{{ $donor->user->name }}</p>
                         @auth
-                            <p class="text-xs text-gray-500">{{ $donor->user->phone ?? $donor->user->email }}</p>
+                            <p class="text-xs text-ink-faint mt-0.5">{{ $donor->user->phone ?? $donor->user->email }}</p>
                         @else
-                            <p class="text-xs text-gray-400">Log in to view contact details</p>
+                            <p class="text-xs text-ink-faint mt-0.5">Log in to view contact details</p>
                         @endauth
                     </div>
                     @if (isset($donor->distance_km))
-                        <span class="text-xs text-gray-500">{{ round($donor->distance_km, 1) }} km away</span>
+                        <span class="text-xs font-semibold text-ink-faint shrink-0">{{ round($donor->distance_km, 1) }} km away</span>
                     @endif
                 </div>
             @endforeach

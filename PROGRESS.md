@@ -193,6 +193,18 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - Automated: `tests/Feature/Phase12AnalyticsAndSecurityTest.php` (9 tests / 45 assertions) - both rate limiters actually blocking after their threshold (not just configured), the `ShouldQueue` audit across all 9 notification classes, `canView()` role gating and live data-correctness for all four widgets (tested directly via `Livewire::test()` on the widget classes, after discovering Filament widgets lazy-load via a follow-up request and don't appear in a plain HTML GET), and a dashboard-reachability check. Full suite: **158 passed / 440 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
+### Design System Application (2026-09-07)
+
+Client feedback: "design is so old & not up to the mark." Produced a modern design plan (published Claude Design canvas — warm off-white/teal/terracotta palette, Newsreader + Public Sans typography, sidebar-based authenticated layout, split-screen auth pages) covering Homepage, Campaign Detail, Donation Flow, Seeker Dashboard, Campaign Wizard, Blood Donor Directory, Notifications Inbox, and Auth pages, then applied it across every Blade view in the app (not just the mocked-up pages):
+
+- New `tailwind.config.js` token system (`primary`/`accent`/`warm`/`ink`/`danger`/`warn`, oklch-based) replaces Breeze's default indigo/emerald/gray palette everywhere — verified via `grep` that no `emerald-`/`indigo-`/`gray-` utility classes remain in `resources/views`.
+- Authenticated layout (`layouts/app.blade.php` + `livewire/layout/navigation.blade.php`) rebuilt as a left sidebar (logo, Dashboard/My Campaigns/My Donations/Notifications-with-unread-badge/Profile, Humanity Badges widget) instead of the old top nav bar.
+- Guest layout (`layouts/guest.blade.php`) rebuilt as a split-screen (brand panel + form) for all 6 auth pages (login, register, forgot/reset/confirm password, verify email).
+- Public layout/nav, campaign listing (now also serves as the homepage hero with **real, live-queried** trust-strip stats — total raised, campaigns funded, field-verified %, registered blood donors — no placeholder numbers), campaign detail (treatment charts, disbursement transparency, updates timeline, sticky donation panel), donation form, seeker dashboard/wizard, blood donor directory/requests/drives, ambulance directory, notifications inbox, and profile pages all restyled to match.
+- Filament admin panel primary color switched from `Color::Emerald` to a custom `Color::hex('#006652')` matching the public site's `--primary` token.
+- `npm run build` verified clean; full suite re-run after all changes: **158 passed / 440 assertions**, no regressions.
+- Not yet done: deploying this to the live cPanel site (`fund.callofhumanity.com`) — still only on the local dev branch pending commit/push and a deploy pass.
+
 ## Open Decisions / Follow-ups
 
 - SMS is currently logged, not sent (`LogSmsGateway`) - swap the `SmsGateway` binding in `AppServiceProvider` for a real provider (Twilio, a local BD SMS aggregator, etc.) once the client picks one and provides credentials. All the alerting logic (who gets alerted, when, with what message) is already built and tested against the interface.

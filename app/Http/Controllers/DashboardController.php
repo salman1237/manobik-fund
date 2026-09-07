@@ -15,10 +15,16 @@ class DashboardController extends Controller
      */
     public function __invoke(): View|RedirectResponse
     {
-        if (Auth::user()->isStaff()) {
+        $user = Auth::user();
+
+        if ($user->isStaff()) {
             return redirect('/control');
         }
 
-        return view('dashboard');
+        return view('dashboard', [
+            'campaignsCount' => $user->campaigns()->count(),
+            'totalRaised' => (int) $user->campaigns()->sum('raised_amount'),
+            'donationsCount' => $user->donations()->count(),
+        ]);
     }
 }

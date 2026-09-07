@@ -30,7 +30,8 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->brandName('Manobik Fund')
             ->colors([
-                'primary' => Color::Emerald,
+                // Matches the public site's --primary design token (oklch(45% 0.10 175)).
+                'primary' => Color::hex('#006652'),
             ])
             // Client decision (2026-09-07): light theme everywhere, no dark mode.
             // NOTE: darkMode(false) disables the toggle and forces light — the

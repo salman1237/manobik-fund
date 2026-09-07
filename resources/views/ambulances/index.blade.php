@@ -1,37 +1,33 @@
 <x-public-layout title="Ambulance Directory">
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Ambulance Directory') }}</h2>
-    </x-slot>
+    <div class="py-10">
+        <div class="max-w-4xl mx-auto px-6 sm:px-10 lg:px-16 flex flex-col gap-6">
+            <h1 class="font-serif text-3xl font-semibold text-ink">{{ __('Ambulance Directory') }}</h1>
 
-    <div class="py-6">
-        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <form method="GET" class="bg-white border border-gray-200 rounded-lg p-4 flex gap-4 items-end">
+            <form method="GET" class="bg-warm-surface border border-warm-border-soft rounded-2xl p-5 flex gap-4 items-end">
                 <div class="flex-1">
-                    <label for="district" class="block text-sm font-medium text-gray-700">District</label>
-                    <select id="district" name="district" class="mt-1 block w-full rounded-md border-gray-300">
+                    <x-input-label for="district" value="District" />
+                    <select id="district" name="district" class="mt-2 block w-full rounded-xl border-warm-border text-sm focus:border-primary focus:ring-primary">
                         <option value="">All Districts</option>
                         @foreach ($districts as $district)
                             <option value="{{ $district }}" @selected($selectedDistrict === $district)>{{ $district }}</option>
                         @endforeach
                     </select>
                 </div>
-                <button type="submit" class="px-4 py-2 bg-emerald-600 text-white text-sm rounded-md hover:bg-emerald-700">
-                    Filter
-                </button>
+                <x-primary-button type="submit">Filter</x-primary-button>
             </form>
 
-            <div id="ambulance-map" style="height: 350px;" class="rounded-lg border border-gray-200"></div>
+            <div id="ambulance-map" style="height: 350px;" class="rounded-2xl border border-warm-border-soft"></div>
 
             @if ($ambulances->isEmpty())
-                <div class="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+                <div class="bg-warm-surface border border-warm-border-soft rounded-2xl p-10 text-center text-ink-faint">
                     No available ambulances found{{ $selectedDistrict ? " in {$selectedDistrict}" : '' }}.
                 </div>
             @else
-                <div class="space-y-3">
+                <div class="flex flex-col gap-3">
                     @foreach ($ambulances as $ambulance)
-                        <div class="bg-white border border-gray-200 rounded-lg p-4">
-                            <p class="font-medium text-gray-900">{{ $ambulance->name }} &middot; {{ ucfirst($ambulance->vehicle_type) }}</p>
-                            <p class="text-sm text-gray-500">{{ $ambulance->district }} &middot; {{ $ambulance->driver_contact }}</p>
+                        <div class="bg-warm-surface border border-warm-border-soft rounded-2xl p-5">
+                            <p class="font-semibold text-ink">{{ $ambulance->name }} &middot; {{ ucfirst($ambulance->vehicle_type) }}</p>
+                            <p class="text-sm text-ink-faint mt-0.5">{{ $ambulance->district }} &middot; {{ $ambulance->driver_contact }}</p>
                         </div>
                     @endforeach
                 </div>

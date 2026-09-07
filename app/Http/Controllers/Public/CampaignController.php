@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Models\BloodDonor;
 use App\Models\Campaign;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -11,12 +12,13 @@ class CampaignController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Campaign::query()
-            ->whereIn('status', [
-                Campaign::STATUS_PUBLISHED,
-                Campaign::STATUS_FUNDED,
-                Campaign::STATUS_COMPLETED,
-            ]);
+        $publicStatuses = [
+            Campaign::STATUS_PUBLISHED,
+            Campaign::STATUS_FUNDED,
+            Campaign::STATUS_COMPLETED,
+        ];
+
+        $query = Campaign::query()->whereIn('status', $publicStatuses);
 
         if ($category = $request->string('category')->toString()) {
             $query->where('category', $category);
@@ -30,20 +32,43 @@ class CampaignController extends Controller
             });
         }
 
-        $campaigns = $query->latest('published_at')->paginate(12)->withQueryString();
+        $campaigns = $query->with('fieldVisitReports')->latest('published_at')->paginate(12)->withQueryString();
+
+        $publicCampaigns = Campaign::query()->whereIn('status', $publicStatuses);
+
+        $stats = [
+            'totalRaised' => (clone $publicCampaigns)->sum('raised_amount'),
+            'campaignsFunded' => (clone $publicCampaigns)->whereIn('status', [Campaign::STATUS_FUNDED, Campaign::STATUS_COMPLETED])->count(),
+            'verifiedPercentage' => $this->verifiedPercentage(clone $publicCampaigns),
+            'bloodDonorsCount' => BloodDonor::query()->count(),
+        ];
 
         return view('campaigns.index', [
             'campaigns' => $campaigns,
             'category' => $category,
             'search' => $search,
+            'stats' => $stats,
         ]);
+    }
+
+    private function verifiedPercentage(\Illuminate\Database\Eloquent\Builder $publicCampaigns): int
+    {
+        $total = (clone $publicCampaigns)->count();
+
+        if ($total === 0) {
+            return 0;
+        }
+
+        $verified = (clone $publicCampaigns)->whereHas('fieldVisitReports')->count();
+
+        return (int) round(($verified / $total) * 100);
     }
 
     public function show(Campaign $campaign): View
     {
         abort_unless($campaign->isPublic(), 404);
 
-        $campaign->load(['updates', 'disbursements']);
+        $campaign->load(['updates', 'disbursements', 'fieldVisitReports']);
 
         return view('campaigns.show', ['campaign' => $campaign]);
     }
