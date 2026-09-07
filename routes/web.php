@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\MyDonationsController;
+use App\Http\Controllers\Public\AmbulanceController;
 use App\Http\Controllers\Public\BloodController;
 use App\Http\Controllers\Public\CampaignController as PublicCampaignController;
 use App\Http\Controllers\Seeker\CampaignController as SeekerCampaignController;
@@ -27,6 +28,8 @@ Route::get('blood-drives', [BloodController::class, 'drives'])->name('blood.driv
 Route::view('blood-donor/profile', 'blood.profile')
     ->middleware(['auth'])
     ->name('blood.donor.profile');
+
+Route::get('ambulances', [AmbulanceController::class, 'index'])->name('ambulances.index');
 
 Route::get('dashboard', DashboardController::class)
     ->middleware(['auth'])

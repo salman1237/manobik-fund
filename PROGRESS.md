@@ -26,7 +26,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 | 6 | Disbursement & Transparency | ✅ | (next commit) | See Testing Log below |
 | 7 | Reward Points & Refunds | ✅ | (next commit) | See Testing Log below |
 | 8 | Blood Donation Network | ✅ | (next commit) | See Testing Log below |
-| 9 | Ambulance Directory | ⬜ | | |
+| 9 | Ambulance Directory | ✅ | (next commit) | See Testing Log below |
 | 10 | Emergency Response, Medical Camps & Education Modules | ⬜ | | |
 | 11 | Notifications & Communication | ⬜ | | |
 | 12 | Analytics, Polish & Deployment | ⬜ | | |
@@ -146,6 +146,17 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - Filament: `BloodDonorResource` and `BloodRequestResource` are staff-facing and mostly read-only (status-change table actions only - Mark Fulfilled/Cancel on requests) since donors and requesters manage their own data through the public/authenticated pages; `BloodDriveEventResource` is a full CRUD resource since Volunteers (and above) genuinely organize these directly in the panel, with `organized_by` auto-set to the creating user.
 - **Bug caught by the page-render test, not written speculatively**: the initial `blood/requests.blade.php` never actually displayed the requester's name anywhere in the markup (only phone/blood group/hospital) - `test_public_blood_pages_render` failed on `assertSee('Visible Requester')`, which is exactly the kind of gap a "looks right" manual read-through tends to miss. Fixed by adding the name to the contact line.
 - Automated: `tests/Feature/Phase8BloodNetworkTest.php` (13 tests / 30 assertions) - donor profile registration/uniqueness/ownership, the proximity search's distance and blood-group filtering (including the cross-city exclusion case), guest vs. authenticated request posting, all four public pages rendering with real seeded content, staff-only drive creation (policy + an actual Filament create-form submission), and the fulfilled/cancel table actions. Full suite: **128 passed / 352 assertions**.
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
+### Phase 9 — Ambulance Directory (2026-09-07)
+
+- `ambulances` table/model per spec §5 exactly (name, driver_contact, vehicle_type, district, lat/long, is_available, added_by). Simplest phase so far - a static directory, per spec §4.5, with live GPS tracking explicitly deferred to a future phase once operators have a companion device/app.
+- `AmbulancePolicy` grants create/update/delete to any staff role (`isStaff()`), not just Volunteer/Executive/Super Admin narrowly - spec's role table doesn't define an ambulance-specific column, and this is low-sensitivity directory data, so the broader interpretation (consistent with how Verification Admin already has broad internal capabilities elsewhere) seemed reasonable over inventing an exclusion the spec doesn't state.
+- Installed `leaflet` via npm (spec §2: "Leaflet or Google Maps JS API" for lat/long-based frontend features) and fixed the well-known Leaflet-under-Vite marker-icon issue (Leaflet's default icons reference relative image paths that break once bundled) by importing the marker images directly and re-pointing `L.Icon.Default` at their Vite-hashed URLs.
+- Public `/ambulances` directory: available-only listing, district filter (dropdown populated from distinct districts actually in the DB, not a hardcoded list), and a live Leaflet map with a marker per ambulance that has coordinates - re-initializes on `livewire:navigated` like the Phase 5 charts, so it survives a SPA-style page transition.
+- **Bug caught by the map-container test, not a manual read-through**: the first version of the map-init script built its marker payload with an inline `@json($ambulances->filter(...)->map(fn ($a) => [...])->values())` directly in the Blade template - the nested array/closure syntax inside `@json()` broke Blade's own directive-argument parser ("Unclosed '[' ... does not match ')'"), a real templating gotcha rather than a business-logic bug. Fixed by moving that data shaping into the controller and passing a plain `$mapPoints` collection to the view instead.
+- Filament `AmbulanceResource` is standard full CRUD (unlike most other Phase 3-8 resources, which avoided generic edit forms because of encrypted fields or audit-trail concerns) - ambulance records have no sensitive/encrypted columns, so a plain form is the right level of engineering here rather than over-building custom actions where a generic CRUD resource is already correct and simpler.
+- Automated: `tests/Feature/Phase9AmbulanceTest.php` (5 tests / 15 assertions) - staff-only policy checks, an actual Filament create-form submission with `added_by` auto-set, the public directory's availability and district filtering, and the map container rendering. Full suite: **133 passed / 367 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
 ## Open Decisions / Follow-ups
