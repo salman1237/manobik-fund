@@ -8,6 +8,7 @@ use App\Models\Donation;
 use App\Services\Payments\ShurjoPayGatewayService;
 use App\Services\Payments\StripeGatewayService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Component;
 
 class DonationForm extends Component
@@ -41,8 +42,26 @@ class DonationForm extends Component
         $this->currency = $value === Donation::GATEWAY_STRIPE ? 'USD' : 'BDT';
     }
 
+    /**
+     * Security review (spec §12): donation endpoints are a fraud/abuse
+     * target (card testing, scripted spam donations) - throttle by IP
+     * before creating anything or touching a payment gateway.
+     */
+    protected function rateLimitKey(): string
+    {
+        return 'donate:'.request()->ip();
+    }
+
     public function donate()
     {
+        if (RateLimiter::tooManyAttempts($this->rateLimitKey(), maxAttempts: 5)) {
+            $this->addError('amount', 'Too many donation attempts. Please wait a minute and try again.');
+
+            return;
+        }
+
+        RateLimiter::hit($this->rateLimitKey(), decaySeconds: 60);
+
         $data = $this->validate([
             'gateway' => 'required|in:'.Donation::GATEWAY_STRIPE.','.Donation::GATEWAY_SHURJOPAY,
             'amount' => 'required|numeric|min:1',

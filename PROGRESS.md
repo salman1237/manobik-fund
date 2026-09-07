@@ -17,19 +17,21 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 
 | Phase | Description | Status | Commit | Notes |
 |---|---|---|---|---|
-| 0 | Project Foundation (Laravel install, permissions, shield, medialibrary, activitylog, roles seeder, settings table) | ✅ | (next commit) | See Testing Log below |
-| 1 | Auth & Panel Scaffolding | ✅ | (next commit) | See Testing Log below |
-| 2 | Campaign Core (Seeker side) | ✅ | (next commit) | See Testing Log below |
-| 3 | Verification Workflow | ✅ | (next commit) | See Testing Log below |
-| 4 | Public Campaign Pages & Donations | ✅ | (next commit) | See Testing Log below |
-| 5 | Real-Time Medical Parameter Tracking | ✅ | (next commit) | See Testing Log below |
-| 6 | Disbursement & Transparency | ✅ | (next commit) | See Testing Log below |
-| 7 | Reward Points & Refunds | ✅ | (next commit) | See Testing Log below |
-| 8 | Blood Donation Network | ✅ | (next commit) | See Testing Log below |
-| 9 | Ambulance Directory | ✅ | (next commit) | See Testing Log below |
-| 10 | Emergency Response, Medical Camps & Education Modules | ✅ | (next commit) | See Testing Log below |
-| 11 | Notifications & Communication | ✅ | (next commit) | See Testing Log below |
-| 12 | Analytics, Polish & Deployment | ⬜ | | |
+| 0 | Project Foundation (Laravel install, permissions, shield, medialibrary, activitylog, roles seeder, settings table) | ✅ | `153600e` | See Testing Log below |
+| 1 | Auth & Panel Scaffolding | ✅ | `fca11ae` | See Testing Log below |
+| 2 | Campaign Core (Seeker side) | ✅ | `4161e47` | See Testing Log below |
+| 3 | Verification Workflow | ✅ | `1f0d65f` | See Testing Log below |
+| 4 | Public Campaign Pages & Donations | ✅ | `c79f2ca` | See Testing Log below |
+| 5 | Real-Time Medical Parameter Tracking | ✅ | `e4a0d64` | See Testing Log below |
+| 6 | Disbursement & Transparency | ✅ | `eb96ff3` | See Testing Log below |
+| 7 | Reward Points & Refunds | ✅ | `240fc15` | See Testing Log below |
+| 8 | Blood Donation Network | ✅ | `35722c2` | See Testing Log below |
+| 9 | Ambulance Directory | ✅ | `f58cebd` | See Testing Log below |
+| 10 | Emergency Response, Medical Camps & Education Modules | ✅ | `ffdc58e` | See Testing Log below |
+| 11 | Notifications & Communication | ✅ | `3eb65bf` | See Testing Log below |
+| 12 | Analytics, Polish & Deployment | ✅ | (next commit) | See Testing Log below |
+
+**All 12 spec phases are now built and tested (158 automated tests / 440 assertions, all passing).** Remaining real work before this is production-ready: real Stripe/ShurjoPay/SMS credentials (see Open Decisions below) and a live-sandbox verification pass on both payment gateways.
 
 ## Testing Log
 
@@ -175,6 +177,20 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - **SMS built as a real integration point, not a stub comment**: `App\Contracts\SmsGateway` + `LogSmsGateway` (writes to the log instead of sending, since spec marks SMS as optional and no provider credentials exist) + a custom Laravel notification channel (`App\Notifications\Channels\SmsChannel`) that resolves the bound gateway and calls a notification's `toSms()` method - the same swap-the-binding-later pattern already used for Stripe/ShurjoPay. `CriticalBloodRequestNotification` fires through it via `CriticalBloodAlertService`, which alerts available donors of a matching blood group only when a blood request's urgency is `critical` (spec's literal example) - normal/urgent requests rely on the public listing page instead of interrupting people.
 - Standardized every notification's `toArray()` to include a `message` string key so the generic inbox view doesn't need per-notification-type branching - caught and fixed `RefundRequestResolvedNotification`, which was missing it before this pass.
 - Automated: `tests/Feature/Phase11NotificationsTest.php` (7 tests / 13 assertions) - the two newly-wired notifications firing to the right recipient, a critical blood request alerting only matching *and* available donors (not wrong-blood-group or unavailable ones), normal-urgency requests triggering no alert, a genuine end-to-end SMS channel test (real notification dispatch through the bound gateway, asserting the actual phone number and message content received - not just that a method was called), and the notifications page listing/mark-as-read flow over real Livewire and HTTP calls. Full suite: **149 passed / 397 assertions**.
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
+### Phase 12 — Analytics, Polish & Deployment (2026-09-07)
+
+**This closes out all 12 phases of the spec.**
+
+- **Super Admin financial analytics** (`app/Filament/Widgets/`): `FinancialOverview` (total raised, total disbursed, completed-donation count), `DonationsByGatewayChart` (doughnut), `DonationsByCategoryChart` (bar, across all four campaign categories), `DisbursementHistoryChart` (line, last 6 months). All four gate `canView()` to `super_admin` only, matching spec §6 Phase 12 exactly ("Super Admin financial analytics dashboard"). Every figure is computed live on each render, not cached/precomputed - same "no fake or static numbers" principle applied to donation counters since Phase 2.
+- Disbursement-history grouping is done in PHP (fetch + `groupBy` on a formatted month string), not a SQL `DATE_FORMAT`/`strftime` call - the same portability reasoning as the Phase 8 proximity search and Phase 9's data-shaping fix: MySQL and SQLite (which the whole suite runs on) group dates differently in SQL, so grouping client-side avoids the app behaving differently under tests than in production.
+- **Real gap found and fixed, not just declared "done"**: all 9 notification classes across Phases 3/6/7/11 used `Queueable` but never actually implemented `ShouldQueue` - meaning every one of them was sending synchronously on the request thread regardless of `QUEUE_CONNECTION`. Added `ShouldQueue` to all nine; a dedicated test asserts every notification class implements it, so a tenth notification added later can't silently skip this.
+- **Rate limiting added to both guest-writable endpoints** (spec §12 security review, previously unaddressed): `DonationForm::donate()` (5/min per IP) and `Blood\RequestForm::submit()` (3/5min per IP, tighter because a critical-urgency post triggers real SMS alerts to donors - the actual abuse vector is spamming people with fake urgent alerts, not just database rows). The Stripe webhook route also got `throttle:120,1` as defense in depth on top of its existing signature verification.
+- Verified (not just asserted) that `config:cache`/`route:cache` succeed cleanly against the current codebase - a quick but real check, since a cached-config bug wouldn't show up in the test suite (which always runs with fresh config).
+- New `DEPLOYMENT.md`: environment checklist, queue worker (supervisor, not `nohup`), scheduler cron entry, storage/CDN split (private `local` disk for medical documents vs. public S3+CDN for deposit slips/campaign images), backups, and an explicit, reasoned decision **not** to add page-level caching for public campaign pages - it would conflict with the client's explicit live-counter requirement, so the "performance pass" focused on query portability/correctness and queued notifications instead of caching that would show stale donation totals.
+- **Flaky test caught and fixed during this phase's regression run, not shipped**: `Phase5TreatmentTrackingTest`'s campaign factories didn't pin `category`, so roughly 1-in-4 runs would randomly roll `education` and fail against the Phase 10 policy restriction (`needsMedicalTracking()` blocks parameter submission for education campaigns). Reproduced deterministically by re-running the specific test, fixed by pinning `category: treatment` in the two affected tests, then re-ran 5x clean before trusting it.
+- Automated: `tests/Feature/Phase12AnalyticsAndSecurityTest.php` (9 tests / 45 assertions) - both rate limiters actually blocking after their threshold (not just configured), the `ShouldQueue` audit across all 9 notification classes, `canView()` role gating and live data-correctness for all four widgets (tested directly via `Livewire::test()` on the widget classes, after discovering Filament widgets lazy-load via a follow-up request and don't appear in a plain HTML GET), and a dashboard-reachability check. Full suite: **158 passed / 440 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
 ## Open Decisions / Follow-ups

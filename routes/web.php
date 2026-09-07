@@ -18,7 +18,11 @@ Route::get('campaigns/{campaign:slug}', [PublicCampaignController::class, 'show'
 Route::get('donations/{donation}/success', [DonationController::class, 'success'])->name('donations.success');
 Route::get('donations/{donation}/cancel', [DonationController::class, 'cancel'])->name('donations.cancel');
 
-Route::post('webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
+// Signature-verified inside the controller; throttled here too as
+// defense in depth against flood/replay abuse (spec §12 security review).
+Route::post('webhooks/stripe', [StripeWebhookController::class, 'handle'])
+    ->middleware('throttle:120,1')
+    ->name('webhooks.stripe');
 
 Route::get('blood-donors', [BloodController::class, 'donors'])->name('blood.donors');
 Route::get('blood-requests', [BloodController::class, 'requests'])->name('blood.requests.index');

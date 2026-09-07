@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Donation;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,7 +13,7 @@ use Illuminate\Notifications\Notification;
  * DonationReceiptNotification for that) that a new donation landed on
  * their campaign, per spec §6 Phase 11.
  */
-class DonationReceivedNotification extends Notification
+class DonationReceivedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

@@ -5,10 +5,11 @@ namespace App\Notifications;
 use App\Models\Campaign;
 use App\Models\Disbursement;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class FundsDisbursedNotification extends Notification
+class FundsDisbursedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

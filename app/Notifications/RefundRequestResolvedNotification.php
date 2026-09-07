@@ -4,10 +4,11 @@ namespace App\Notifications;
 
 use App\Models\RefundRequest;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class RefundRequestResolvedNotification extends Notification
+class RefundRequestResolvedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

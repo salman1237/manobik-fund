@@ -5,14 +5,18 @@ namespace App\Notifications;
 use App\Models\BloodRequest;
 use App\Notifications\Channels\SmsChannel;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 /**
  * spec §6 Phase 11: "Optional SMS gateway integration for critical alerts
  * (blood requests, urgent camp needs)." Sent to nearby available donors of
  * a matching blood group when a critical-urgency request is posted.
+ * Queued like the other notifications (Phase 12 performance pass) - relies
+ * on a running queue worker in production (see DEPLOYMENT.md) to still
+ * deliver promptly despite being time-sensitive.
  */
-class CriticalBloodRequestNotification extends Notification
+class CriticalBloodRequestNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

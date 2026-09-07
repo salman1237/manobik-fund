@@ -20,7 +20,14 @@ class Phase5TreatmentTrackingTest extends TestCase
     {
         $seeker = User::factory()->create();
         $seeker->assignRole('user');
-        $campaign = Campaign::factory()->published()->create(['seeker_id' => $seeker->id]);
+        // Pinned to treatment: needsMedicalTracking() (Phase 10) blocks
+        // parameter submission for education campaigns, and the factory's
+        // category is otherwise random - this test is specifically about
+        // the submission path, so it shouldn't be flaky based on category.
+        $campaign = Campaign::factory()->published()->create([
+            'seeker_id' => $seeker->id,
+            'category' => Campaign::CATEGORY_TREATMENT,
+        ]);
 
         Livewire::actingAs($seeker)->test(SubmitTreatmentParameter::class, ['campaign' => $campaign])
             ->set('parameterType', TreatmentParameter::TYPE_PAIN_SCALE)
@@ -57,7 +64,10 @@ class Phase5TreatmentTrackingTest extends TestCase
         $owner->assignRole('user');
         $intruder = User::factory()->create();
         $intruder->assignRole('user');
-        $campaign = Campaign::factory()->published()->create(['seeker_id' => $owner->id]);
+        $campaign = Campaign::factory()->published()->create([
+            'seeker_id' => $owner->id,
+            'category' => Campaign::CATEGORY_TREATMENT,
+        ]);
 
         Livewire::actingAs($intruder)->test(SubmitTreatmentParameter::class, ['campaign' => $campaign])
             ->set('label', 'Not Mine')
