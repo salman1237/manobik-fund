@@ -23,7 +23,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 | 3 | Verification Workflow | ✅ | (next commit) | See Testing Log below |
 | 4 | Public Campaign Pages & Donations | ✅ | (next commit) | See Testing Log below |
 | 5 | Real-Time Medical Parameter Tracking | ✅ | (next commit) | See Testing Log below |
-| 6 | Disbursement & Transparency | ⬜ | | |
+| 6 | Disbursement & Transparency | ✅ | (next commit) | See Testing Log below |
 | 7 | Reward Points & Refunds | ⬜ | | |
 | 8 | Blood Donation Network | ⬜ | | |
 | 9 | Ambulance Directory | ⬜ | | |
@@ -112,6 +112,16 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - Installed `chart.js` via npm (bundled through the existing Vite pipeline, not a CDN — this is the app's own asset build, unrelated to the Artifact tool's CDN allowlist) and registered it globally (`window.Chart`) in `resources/js/app.js`. `<x-campaign-charts>` renders line charts for vitals, a milestone list, a hospital-days stat, and (once Phase 6 starts populating `fund_utilizations`) a pie chart - and re-initializes on Livewire's `livewire:navigated` event so charts still render correctly after a `wire:navigate` SPA-style page transition, not just a full page load.
 - Automated: `tests/Feature/Phase5TreatmentTrackingTest.php` (6 tests / 24 assertions) - seeker submission on a published campaign, rejection before publish and for non-owners, the anti-fabrication rendering test above, `publicChartData()`'s grouping/aggregation logic (including `SUM()`-by-category for fund utilization), and Filament verify-action visibility by role. Full suite: **92 passed / 265 assertions**.
 - Manual: booted `php artisan serve`, seeded a campaign with a vital, a milestone, and a fund-utilization entry, confirmed all three render on the real HTTP response (canvas elements present, milestone text visible, no server errors in the log).
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
+### Phase 6 — Disbursement & Transparency (2026-09-07)
+
+- `disbursements` table/model per spec §5. `CampaignDisbursementService::disburse()` is one action matching spec Phase 6's literal wording ("Executive Admin disbursement action: mark funded/completed, upload deposit slip"): it records the transfer, stores the deposit slip path, optionally logs `fund_utilization` entries in the same DB transaction (closing the loop from Phase 5's "tied to fund_utilization entries the Executive Admin logs on disbursement"), and moves the campaign to either `funded` (more disbursements may follow) or `completed` (final) - both guarded, throwing `InvalidCampaignTransition` for any other target status or if the campaign isn't currently `published`/`funded`.
+- `CampaignPolicy::disburse()` restricts this to `executive_admin`/`super_admin` only, matching spec §3's role table exactly (Verification Admin cannot disburse, even though they can do everything else up to forwarding).
+- Filament "Disburse Funds" table action on `CampaignResource`: amount, target status, a `FileUpload` for the deposit slip (stored on the **`public`** disk, not `local` like campaign documents - spec explicitly calls the slip "public proof," so `storage:link` was run and the public URL is what the transparency section links to), and an optional repeater for the fund-utilization breakdown so Taka amounts entered by staff get converted to the same integer-poisha convention used everywhere else.
+- Public campaign page gets a new "Transparency: Fund Disbursement" section (disbursement history + a direct link to each deposit slip) alongside Phase 5's fund-utilization pie chart - together these are the "Transparency" section spec Phase 6 asks for.
+- `FundsDisbursedNotification` (mail + database) notifies the Seeker when their campaign receives a disbursement.
+- Automated: `tests/Feature/Phase6DisbursementTest.php` (8 tests / 25 assertions) - the service's happy path and both guard failures, fund-utilization entry creation with correct Taka-to-poisha conversion, disburse-ability restricted to Executive/Super Admin, Filament action visibility by campaign status, an actual file upload through the Filament action (`Storage::fake('public')`), and the public transparency section rendering with the real disbursed amount and a working deposit-slip link. Full suite: **100 passed / 290 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
 ## Open Decisions / Follow-ups

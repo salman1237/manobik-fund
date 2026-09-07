@@ -97,4 +97,13 @@ class CampaignPolicy
     {
         return $user->hasAnyRole(['executive_admin', 'super_admin']);
     }
+
+    /**
+     * Only Executive Admin and Super Admin move money (spec §3 role table:
+     * "Can Disburse Funds?").
+     */
+    public function disburse(User $user, Campaign $campaign): bool
+    {
+        return $user->hasAnyRole(['executive_admin', 'super_admin']);
+    }
 }

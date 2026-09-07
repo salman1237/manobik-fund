@@ -43,6 +43,8 @@ class CampaignController extends Controller
     {
         abort_unless($campaign->isPublic(), 404);
 
+        $campaign->load(['updates', 'disbursements']);
+
         return view('campaigns.show', ['campaign' => $campaign]);
     }
 }

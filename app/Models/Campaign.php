@@ -137,6 +137,11 @@ class Campaign extends Model implements HasMedia
         return $this->hasMany(FundUtilization::class);
     }
 
+    public function disbursements(): HasMany
+    {
+        return $this->hasMany(Disbursement::class)->latest('disbursed_at');
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('cover')->singleFile();

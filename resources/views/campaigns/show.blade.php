@@ -13,6 +13,26 @@
 
                 <x-campaign-charts :campaign="$campaign" />
 
+                @if ($campaign->disbursements->isNotEmpty())
+                    <div class="bg-white border border-gray-200 rounded-lg p-6">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-3">Transparency: Fund Disbursement</h2>
+                        <ul class="space-y-3">
+                            @foreach ($campaign->disbursements as $disbursement)
+                                <li class="flex items-center justify-between text-sm border-b border-gray-100 pb-2 last:border-0">
+                                    <div>
+                                        <p class="text-gray-800 font-medium">{{ number_format($disbursement->amount / 100, 2) }} BDT disbursed</p>
+                                        <p class="text-gray-500 text-xs">{{ $disbursement->disbursed_at->format('M j, Y') }}</p>
+                                    </div>
+                                    <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($disbursement->deposit_slip_file) }}"
+                                       target="_blank" rel="noopener" class="text-emerald-700 hover:underline text-xs">
+                                        View Deposit Slip
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <div>
                     <h2 class="text-lg font-semibold text-gray-900 mb-2">Patient Updates</h2>
                     @forelse ($campaign->updates as $update)

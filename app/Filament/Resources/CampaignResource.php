@@ -4,8 +4,11 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CampaignResource\Pages;
 use App\Models\Campaign;
+use App\Models\Disbursement;
 use App\Models\FieldVisitReport;
+use App\Models\FundUtilization;
 use App\Models\User;
+use App\Services\CampaignDisbursementService;
 use App\Services\CampaignVerificationService;
 use Filament\Forms;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -100,6 +103,20 @@ class CampaignResource extends Resource
                             ->contained(false),
                     ])
                     ->visible(fn (Campaign $record) => $record->fieldVisitReports->isNotEmpty()),
+
+                Section::make('Disbursements')
+                    ->schema([
+                        RepeatableEntry::make('disbursements')
+                            ->schema([
+                                TextEntry::make('amount')->formatStateUsing(fn (int $state) => number_format($state / 100, 2).' BDT'),
+                                TextEntry::make('disburser.name')->label('Disbursed By'),
+                                TextEntry::make('disbursed_at')->dateTime(),
+                                TextEntry::make('deposit_slip_file')->label('Deposit Slip'),
+                            ])
+                            ->columns(4)
+                            ->contained(false),
+                    ])
+                    ->visible(fn (Campaign $record) => $record->disbursements->isNotEmpty()),
             ]);
     }
 
@@ -222,6 +239,60 @@ class CampaignResource extends Resource
                         app(CampaignVerificationService::class)->publish($record, Auth::user());
 
                         Notification::make()->title('Campaign published')->success()->send();
+                    }),
+
+                Tables\Actions\Action::make('disburse')
+                    ->label('Disburse Funds')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success')
+                    ->visible(fn (Campaign $record) => Auth::user()->can('disburse', $record)
+                        && in_array($record->status, [Campaign::STATUS_PUBLISHED, Campaign::STATUS_FUNDED], true))
+                    ->form([
+                        Forms\Components\TextInput::make('amount')
+                            ->label('Amount (BDT)')
+                            ->numeric()
+                            ->required(),
+                        Forms\Components\Select::make('new_status')
+                            ->label('Mark Campaign As')
+                            ->options([
+                                Campaign::STATUS_FUNDED => 'Funded (more disbursements may follow)',
+                                Campaign::STATUS_COMPLETED => 'Completed (final disbursement)',
+                            ])
+                            ->required(),
+                        Forms\Components\FileUpload::make('deposit_slip')
+                            ->label('Deposit Slip (public proof)')
+                            ->disk('public')
+                            ->directory('deposit-slips')
+                            ->required(),
+                        Forms\Components\Repeater::make('fund_utilization')
+                            ->label('Fund Utilization Breakdown (optional)')
+                            ->schema([
+                                Forms\Components\Select::make('category')
+                                    ->options([
+                                        FundUtilization::CATEGORY_SURGERY => 'Surgery',
+                                        FundUtilization::CATEGORY_MEDICATION => 'Medication',
+                                        FundUtilization::CATEGORY_ICU => 'ICU',
+                                        FundUtilization::CATEGORY_POST_OP => 'Post-Op',
+                                        FundUtilization::CATEGORY_OTHER => 'Other',
+                                    ])
+                                    ->required(),
+                                Forms\Components\TextInput::make('amount')->numeric()->required(),
+                                Forms\Components\TextInput::make('description'),
+                            ])
+                            ->columns(3)
+                            ->defaultItems(0),
+                    ])
+                    ->action(function (Campaign $record, array $data) {
+                        app(CampaignDisbursementService::class)->disburse(
+                            $record,
+                            Auth::user(),
+                            (int) round($data['amount'] * 100),
+                            $data['deposit_slip'],
+                            $data['new_status'],
+                            $data['fund_utilization'] ?? [],
+                        );
+
+                        Notification::make()->title('Disbursement recorded')->success()->send();
                     }),
 
                 Tables\Actions\Action::make('reject')
