@@ -15,11 +15,14 @@ class TreatmentParameterPolicy
 
     /**
      * Only the Seeker or an admin can add parameter entries (spec §4.2),
-     * and only once the campaign is actually live.
+     * only once the campaign is actually live, and never for education
+     * campaigns (spec Phase 10: no medical dimension to track there).
      */
     public function create(User $user, Campaign $campaign): bool
     {
-        return ($campaign->seeker_id === $user->id || $user->isStaff()) && $campaign->isPublic();
+        return ($campaign->seeker_id === $user->id || $user->isStaff())
+            && $campaign->isPublic()
+            && $campaign->needsMedicalTracking();
     }
 
     /**

@@ -121,7 +121,15 @@ class CampaignWizard extends Component
             $this->campaignId = $campaign->id;
         }
 
-        $this->step = 2;
+        // Education campaigns have no hospital/medical dimension to
+        // capture (spec Phase 10: "simplify the form for these types") -
+        // skip straight to documents.
+        $this->step = $data['category'] === Campaign::CATEGORY_EDUCATION ? 3 : 2;
+    }
+
+    public function isMedicalCategory(): bool
+    {
+        return $this->category !== Campaign::CATEGORY_EDUCATION;
     }
 
     public function saveStepTwo(): void

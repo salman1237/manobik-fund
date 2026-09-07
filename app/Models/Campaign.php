@@ -160,6 +160,15 @@ class Campaign extends Model implements HasMedia
         return $this->status === self::STATUS_DRAFT;
     }
 
+    /**
+     * Education campaigns have no medical dimension to track (spec Phase
+     * 10: "no medical-parameter tracking needed for education campaigns").
+     */
+    public function needsMedicalTracking(): bool
+    {
+        return $this->category !== self::CATEGORY_EDUCATION;
+    }
+
     public function isPublic(): bool
     {
         return in_array($this->status, [

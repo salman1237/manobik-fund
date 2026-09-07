@@ -127,7 +127,7 @@
                 @endif
 
                 <div class="flex justify-between gap-2 pt-4">
-                    <x-secondary-button type="button" wire:click="goToStep(2)">Back</x-secondary-button>
+                    <x-secondary-button type="button" wire:click="goToStep({{ $this->isMedicalCategory() ? 2 : 1 }})">Back</x-secondary-button>
                     <div class="flex gap-2">
                         <x-secondary-button type="button" wire:click="saveAndExit">Save & Exit</x-secondary-button>
                         <x-primary-button type="submit">Save & Continue</x-primary-button>

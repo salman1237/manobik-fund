@@ -32,14 +32,47 @@ class CampaignResource extends Resource
     protected static ?string $navigationLabel = 'Campaign Verification';
 
     /**
-     * Campaigns are created by Seekers via the public wizard (Phase 2), not
-     * from this internal panel - staff only review and transition status
-     * here. This also avoids exposing the raw encrypted bank_account_details
-     * column through a generic form field.
+     * Treatment campaigns are always created by Seekers via the public
+     * wizard (Phase 2) and reviewed here - no generic create form for
+     * those, partly to avoid exposing the raw encrypted
+     * bank_account_details column through a plain form field. Emergency/
+     * camp/education campaigns are the exception (spec §4.3/Phase 10):
+     * Executive/Super Admin may create those directly through a
+     * restricted form (see form() below, category locked to those three).
      */
     public static function canCreate(): bool
     {
-        return false;
+        return Auth::user()?->can('createDirectly', Campaign::class) ?? false;
+    }
+
+    /**
+     * Only used by the Create page - emergency/camp/education campaigns
+     * created directly by staff. No banking/document fields here, unlike
+     * the Seeker wizard: these are typically platform-/org-run and don't
+     * carry an individual beneficiary payout the same way (spec Phase 10:
+     * "camps may skip banking details if run directly by the platform").
+     */
+    public static function form(Forms\Form $form): Forms\Form
+    {
+        return $form->schema([
+            Forms\Components\Select::make('category')
+                ->options([
+                    Campaign::CATEGORY_EMERGENCY => 'Emergency Response',
+                    Campaign::CATEGORY_CAMP => 'Medical Camp',
+                    Campaign::CATEGORY_EDUCATION => 'Education & Training',
+                ])
+                ->required(),
+            Forms\Components\TextInput::make('title')->required()->maxLength(255),
+            Forms\Components\Textarea::make('description')->required()->columnSpanFull(),
+            Forms\Components\TextInput::make('hospital_name')
+                ->label('Location / Venue')
+                ->maxLength(255),
+            Forms\Components\TextInput::make('target_amount')
+                ->label('Target Amount (BDT)')
+                ->numeric()
+                ->required(),
+            Forms\Components\DatePicker::make('deadline')->required(),
+        ]);
     }
 
     public static function getEloquentQuery(): Builder
@@ -321,6 +354,7 @@ class CampaignResource extends Resource
     {
         return [
             'index' => Pages\ListCampaigns::route('/'),
+            'create' => Pages\CreateCampaign::route('/create'),
             'view' => Pages\ViewCampaign::route('/{record}'),
         ];
     }

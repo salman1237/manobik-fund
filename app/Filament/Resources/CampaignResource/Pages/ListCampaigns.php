@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CampaignResource\Pages;
 
 use App\Filament\Resources\CampaignResource;
+use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListCampaigns extends ListRecords
@@ -11,6 +12,9 @@ class ListCampaigns extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Actions\CreateAction::make()
+                ->label('New Emergency/Camp/Education Campaign'),
+        ];
     }
 }

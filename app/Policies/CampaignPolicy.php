@@ -36,6 +36,19 @@ class CampaignPolicy
     }
 
     /**
+     * Emergency/camp/education campaigns are "typically created/managed
+     * directly by admins or approved organizations rather than individual
+     * Seekers" (spec §4.3) - Executive/Super Admin may create these
+     * directly through the internal panel, bypassing the Seeker wizard.
+     * Treatment campaigns always go through create() + the verification
+     * pipeline, since they represent an individual patient's claim.
+     */
+    public function createDirectly(User $user): bool
+    {
+        return $user->hasAnyRole(['executive_admin', 'super_admin']);
+    }
+
+    /**
      * A Seeker never sees other users' campaigns for editing (spec §3),
      * and only while the campaign is still a draft.
      */

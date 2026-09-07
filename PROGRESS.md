@@ -27,7 +27,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 | 7 | Reward Points & Refunds | ✅ | (next commit) | See Testing Log below |
 | 8 | Blood Donation Network | ✅ | (next commit) | See Testing Log below |
 | 9 | Ambulance Directory | ✅ | (next commit) | See Testing Log below |
-| 10 | Emergency Response, Medical Camps & Education Modules | ⬜ | | |
+| 10 | Emergency Response, Medical Camps & Education Modules | ✅ | (next commit) | See Testing Log below |
 | 11 | Notifications & Communication | ⬜ | | |
 | 12 | Analytics, Polish & Deployment | ⬜ | | |
 
@@ -157,6 +157,15 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - **Bug caught by the map-container test, not a manual read-through**: the first version of the map-init script built its marker payload with an inline `@json($ambulances->filter(...)->map(fn ($a) => [...])->values())` directly in the Blade template - the nested array/closure syntax inside `@json()` broke Blade's own directive-argument parser ("Unclosed '[' ... does not match ')'"), a real templating gotcha rather than a business-logic bug. Fixed by moving that data shaping into the controller and passing a plain `$mapPoints` collection to the view instead.
 - Filament `AmbulanceResource` is standard full CRUD (unlike most other Phase 3-8 resources, which avoided generic edit forms because of encrypted fields or audit-trail concerns) - ambulance records have no sensitive/encrypted columns, so a plain form is the right level of engineering here rather than over-building custom actions where a generic CRUD resource is already correct and simpler.
 - Automated: `tests/Feature/Phase9AmbulanceTest.php` (5 tests / 15 assertions) - staff-only policy checks, an actual Filament create-form submission with `added_by` auto-set, the public directory's availability and district filtering, and the map container rendering. Full suite: **133 passed / 367 assertions**.
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
+### Phase 10 — Emergency Response, Medical Camps & Education Modules (2026-09-07)
+
+- No new tables - this phase is entirely about reusing the campaign engine already built in Phases 2-6 for the other three categories, per spec §6 Phase 10's own framing ("reuse the campaign engine").
+- **New `CampaignPolicy::createDirectly`** (Executive/Super Admin only) and a restricted `CampaignResource` create form: category locked to `emergency`/`camp`/`education` (never `treatment` - validated again server-side in `CreateCampaign::mutateFormDataBeforeCreate`, not just hidden from the Select's options, since a client could otherwise tamper with the submitted value), no banking or document fields at all. Submitting sets `status` straight to `published` - spec §4.3 says these are "typically created/managed directly by admins," so the creating admin is effectively both author and approver, and making them sit in their own verification queue would be pointless. This satisfies Phase 10's "camps may skip banking details if run directly by the platform" literally: the platform-run path has no banking fields to begin with, while a Seeker-initiated camp (still possible, just less typical per spec's wording) goes through the unchanged Phase 2 wizard, banking included.
+- `CampaignWizard` now skips step 2 (hospital/medical info) entirely for `education` campaigns, jumping straight from basic info to documents - matches spec's "simplify the form for these types." Treatment/emergency/camp all keep the location step since a physical site is still meaningful for a disaster response or camp.
+- `Campaign::needsMedicalTracking()` (false only for `education`) is checked in **two places that must agree**: `TreatmentParameterPolicy::create()` (backend enforcement) and the Blade views (hiding the "Treatment Tracking" section) - avoids the classic drift where a UI hides a button but the backend still accepts the request from a direct API/console call.
+- Automated: `tests/Feature/Phase10ModulesTest.php` (9 tests / 17 assertions) - direct admin creation and immediate publication, role restriction on that path (Verification Admin explicitly cannot, matching the pattern already established for publish/disburse), a real attempt to smuggle `category=treatment` through the direct-create form and having it rejected, the wizard's step-skip behavior for education vs. treatment, and the parameter-submission policy blocking education while still allowing treatment. Full suite: **142 passed / 384 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
 ## Open Decisions / Follow-ups

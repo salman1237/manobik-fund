@@ -34,7 +34,7 @@
                 @endif
 
                 <div>
-                    <h2 class="text-lg font-semibold text-gray-900 mb-2">Patient Updates</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2">{{ $campaign->needsMedicalTracking() ? 'Patient Updates' : 'Updates' }}</h2>
                     @forelse ($campaign->updates as $update)
                         <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3">
                             <p class="text-xs text-gray-400">{{ $update->created_at->format('M j, Y - g:i A') }}</p>
