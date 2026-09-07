@@ -17,15 +17,14 @@ Companion to `manobik-fund-spec.md` §6 Phase 12 ("Production deployment checkli
 
 Several things (queued notifications as of Phase 12, and anything added later) depend on a worker actually running — without one, jobs sit in the `jobs` table forever and users never get emails/SMS.
 
-- [ ] Run `php artisan queue:work --tries=3 --backoff=30` under a process supervisor (systemd unit or Supervisor), not `screen`/`nohup`
-- [ ] Configure automatic restart on deploy (`php artisan queue:restart` after each release, or restart the supervisor unit)
+- **On a VPS/dedicated server with root access**: run `php artisan queue:work --tries=3 --backoff=30` under a process supervisor (systemd unit or Supervisor), not `screen`/`nohup`; restart it on every deploy (`php artisan queue:restart`).
+- **On shared cPanel hosting (the actual deployment target as of 2026-09-07 — `fund.callofhumanity.com`)**: there's no root access for a persistent supervisor. `routes/console.php` instead schedules `queue:work --stop-when-empty --tries=3 --max-time=50` to run every minute via Laravel's scheduler (`withoutOverlapping()` guards against a slow run bleeding into the next tick) — this only needs the single cron entry in §3 below, nothing queue-specific to configure separately.
 - [ ] Monitor the `failed_jobs` table / configure `queue:failed` alerting
 
 ## 3. Scheduler
 
-No scheduled tasks exist yet in `routes/console.php`, but the cron entry should be in place before one is needed (e.g. future refund-window expiry, digest emails):
-
-- [ ] Add a single cron entry: `* * * * * cd /path-to-app && php artisan schedule:run >> /dev/null 2>&1`
+- [ ] Add a single cPanel cron entry (Cron Jobs in cPanel, or `crontab -e`): `* * * * * cd /home/skoder/public_html/fund.callofhumanity.com && /opt/cpanel/ea-php82/root/usr/bin/php artisan schedule:run >> /dev/null 2>&1`
+- This single entry drives both the queue worker (§2) and anything else added to `routes/console.php`'s schedule later (e.g. future refund-window expiry, digest emails) - no separate queue cron needed.
 
 ## 4. File storage
 
