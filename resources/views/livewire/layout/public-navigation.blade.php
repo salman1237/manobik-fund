@@ -25,6 +25,9 @@ new class extends Component
                     <x-nav-link :href="route('campaigns.index')" :active="request()->routeIs('campaigns.*') || request()->routeIs('home')" wire:navigate>
                         {{ __('Browse Campaigns') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('blood.donors')" :active="request()->routeIs('blood.*')" wire:navigate>
+                        {{ __('Blood Donors') }}
+                    </x-nav-link>
                 </div>
             </div>
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DonationController;
 use App\Http\Controllers\MyDonationsController;
+use App\Http\Controllers\Public\BloodController;
 use App\Http\Controllers\Public\CampaignController as PublicCampaignController;
 use App\Http\Controllers\Seeker\CampaignController as SeekerCampaignController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
@@ -17,6 +18,15 @@ Route::get('donations/{donation}/success', [DonationController::class, 'success'
 Route::get('donations/{donation}/cancel', [DonationController::class, 'cancel'])->name('donations.cancel');
 
 Route::post('webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
+
+Route::get('blood-donors', [BloodController::class, 'donors'])->name('blood.donors');
+Route::get('blood-requests', [BloodController::class, 'requests'])->name('blood.requests.index');
+Route::get('blood-requests/create', [BloodController::class, 'requestCreate'])->name('blood.requests.create');
+Route::get('blood-drives', [BloodController::class, 'drives'])->name('blood.drives');
+
+Route::view('blood-donor/profile', 'blood.profile')
+    ->middleware(['auth'])
+    ->name('blood.donor.profile');
 
 Route::get('dashboard', DashboardController::class)
     ->middleware(['auth'])

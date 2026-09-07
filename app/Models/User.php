@@ -109,6 +109,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return $this->hasMany(\App\Models\RefundRequest::class);
     }
 
+    public function bloodDonorProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\BloodDonor::class);
+    }
+
     /**
      * Total "Humanity Badges" points, always summed live from reward_points
      * rather than a cached counter column - keeps this consistent with the

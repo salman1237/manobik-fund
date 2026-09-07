@@ -25,7 +25,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 | 5 | Real-Time Medical Parameter Tracking | ✅ | (next commit) | See Testing Log below |
 | 6 | Disbursement & Transparency | ✅ | (next commit) | See Testing Log below |
 | 7 | Reward Points & Refunds | ✅ | (next commit) | See Testing Log below |
-| 8 | Blood Donation Network | ⬜ | | |
+| 8 | Blood Donation Network | ✅ | (next commit) | See Testing Log below |
 | 9 | Ambulance Directory | ⬜ | | |
 | 10 | Emergency Response, Medical Camps & Education Modules | ⬜ | | |
 | 11 | Notifications & Communication | ⬜ | | |
@@ -134,6 +134,18 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - New donor-facing `/my-donations` page: donation history, a "Humanity Badges" points total, and an inline refund-request form (only shown when `isRefundEligible()`). Also added a Humanity Badges display to the existing profile page, per spec Phase 7's explicit requirement - skipped the homepage leaderboard/boost mechanic since the spec itself marks it optional.
 - Filament `RefundRequestResource`: read-only audit trail (no create/edit/delete) with three actions - approve via gateway, approve via campaign-redirect (with a campaign picker), reject with a reason - all hidden once a request is no longer pending.
 - Automated: `tests/Feature/Phase7RewardsAndRefundsTest.php` (15 tests / 32 assertions) - points awarded at the configured percentage, settings-driven percentage changes, guest exclusion, double-completion idempotency, refund eligibility rules, cross-user request denial, duplicate-request blocking, both approval paths (gateway refund via a fake `PaymentGateway` binding, and credit redirect verified by checking both campaigns' `raised_amount`), rejection, policy restriction, Filament action visibility, and the two new pages (`/my-donations`, `/profile`) actually rendering the right numbers over real HTTP requests. Full suite: **115 passed / 322 assertions**.
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
+### Phase 8 — Blood Donation Network (2026-09-07)
+
+- `blood_donors`/`blood_requests` tables/models per spec §5, plus a new `blood_drive_events` table not in the spec's schema listing but required for the explicitly-requested "Volunteer-managed donation drive events" feature (spec §4.4/§6 Phase 8) - the spec's own schema section is stated to be "a starting structure," so this follows the same pattern as earlier additions (e.g. `rejection_reason` in Phase 2).
+- **Proximity search built portably on purpose**: rather than a MySQL-specific Haversine SQL query (`RADIANS()`/`ACOS()`, unavailable in SQLite, which the whole test suite runs on), `BloodDonor::nearby()` does a cheap lat/lng bounding-box filter in SQL (plain arithmetic, works identically on both drivers) and then computes exact great-circle distance in PHP for final radius filtering and nearest-first sorting. Verified with a real two-city test (Dhaka vs. Chittagong, ~200km apart) that the far donor is correctly excluded from a 25km search.
+- `BloodDonorPolicy`: one donor profile per user (`create` checks `bloodDonorProfile()->exists()`), and only the owner can update/toggle it - the client's "no fake data" principle extends here too, since availability status has to be self-reported truth, not admin-editable.
+- Blood request posting has **no policy gate on create at all** - spec §4.4 explicitly allows both guest and authenticated posting, so `requested_by` is nullable and simply set from `Auth::id()` when present.
+- Public donor search hides a donor's phone/email from unauthenticated visitors (shows "Log in to view contact details" instead) - a privacy-conscious default the spec doesn't spell out one way or the other, but leaving contact info fully open to scraping by any anonymous visitor seemed like the wrong call for personal medical/contact data.
+- Filament: `BloodDonorResource` and `BloodRequestResource` are staff-facing and mostly read-only (status-change table actions only - Mark Fulfilled/Cancel on requests) since donors and requesters manage their own data through the public/authenticated pages; `BloodDriveEventResource` is a full CRUD resource since Volunteers (and above) genuinely organize these directly in the panel, with `organized_by` auto-set to the creating user.
+- **Bug caught by the page-render test, not written speculatively**: the initial `blood/requests.blade.php` never actually displayed the requester's name anywhere in the markup (only phone/blood group/hospital) - `test_public_blood_pages_render` failed on `assertSee('Visible Requester')`, which is exactly the kind of gap a "looks right" manual read-through tends to miss. Fixed by adding the name to the contact line.
+- Automated: `tests/Feature/Phase8BloodNetworkTest.php` (13 tests / 30 assertions) - donor profile registration/uniqueness/ownership, the proximity search's distance and blood-group filtering (including the cross-city exclusion case), guest vs. authenticated request posting, all four public pages rendering with real seeded content, staff-only drive creation (policy + an actual Filament create-form submission), and the fulfilled/cancel table actions. Full suite: **128 passed / 352 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
 ## Open Decisions / Follow-ups
