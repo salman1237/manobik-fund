@@ -43,6 +43,10 @@ Route::get('my-donations', [MyDonationsController::class, 'index'])
     ->middleware(['auth'])
     ->name('donations.index');
 
+Route::view('notifications', 'notifications.index')
+    ->middleware(['auth'])
+    ->name('notifications.index');
+
 Route::middleware(['auth'])->prefix('seeker/campaigns')->name('seeker.campaigns.')->group(function () {
     Route::get('/', [SeekerCampaignController::class, 'index'])->name('index');
     Route::get('/create', [SeekerCampaignController::class, 'create'])->name('create');

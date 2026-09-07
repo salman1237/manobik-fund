@@ -4,6 +4,7 @@ namespace App\Livewire\Blood;
 
 use App\Models\BloodDonor;
 use App\Models\BloodRequest;
+use App\Services\CriticalBloodAlertService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -31,7 +32,7 @@ class RequestForm extends Component
             'urgency' => 'required|in:normal,urgent,critical',
         ]);
 
-        BloodRequest::query()->create([
+        $bloodRequest = BloodRequest::query()->create([
             'requested_by' => Auth::id(),
             'requester_name' => $data['requesterName'],
             'requester_phone' => $data['requesterPhone'],
@@ -40,6 +41,8 @@ class RequestForm extends Component
             'urgency' => $data['urgency'],
             'status' => BloodRequest::STATUS_OPEN,
         ]);
+
+        app(CriticalBloodAlertService::class)->alertMatchingDonors($bloodRequest);
 
         $this->submitted = true;
         $this->reset(['requesterName', 'requesterPhone', 'hospitalName']);

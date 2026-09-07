@@ -33,6 +33,13 @@ new class extends Component
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')" wire:navigate>
+                        {{ __('Notifications') }}
+                        @php($unread = auth()->user()->unreadNotifications()->count())
+                        @if ($unread > 0)
+                            <span class="ms-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full">{{ $unread }}</span>
+                        @endif
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -83,6 +90,9 @@ new class extends Component
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')" wire:navigate>
+                {{ __('Notifications') }}
             </x-responsive-nav-link>
         </div>
 

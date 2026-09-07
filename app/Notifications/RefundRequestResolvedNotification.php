@@ -38,6 +38,9 @@ class RefundRequestResolvedNotification extends Notification
         return [
             'refund_request_id' => $this->refundRequest->id,
             'status' => $this->refundRequest->status,
+            'message' => $this->refundRequest->status === RefundRequest::STATUS_APPROVED
+                ? 'Your refund request was approved.'
+                : 'Your refund request was rejected.',
         ];
     }
 }

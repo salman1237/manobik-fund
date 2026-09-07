@@ -28,7 +28,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 | 8 | Blood Donation Network | ✅ | (next commit) | See Testing Log below |
 | 9 | Ambulance Directory | ✅ | (next commit) | See Testing Log below |
 | 10 | Emergency Response, Medical Camps & Education Modules | ✅ | (next commit) | See Testing Log below |
-| 11 | Notifications & Communication | ⬜ | | |
+| 11 | Notifications & Communication | ✅ | (next commit) | See Testing Log below |
 | 12 | Analytics, Polish & Deployment | ⬜ | | |
 
 ## Testing Log
@@ -168,8 +168,18 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - Automated: `tests/Feature/Phase10ModulesTest.php` (9 tests / 17 assertions) - direct admin creation and immediate publication, role restriction on that path (Verification Admin explicitly cannot, matching the pattern already established for publish/disburse), a real attempt to smuggle `category=treatment` through the direct-create form and having it rejected, the wizard's step-skip behavior for education vs. treatment, and the parameter-submission policy blocking education while still allowing treatment. Full suite: **142 passed / 384 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
+### Phase 11 — Notifications & Communication (2026-09-07)
+
+- **Closed a real gap found while reviewing this phase**: Phases 3, 6, and 7 had already been sending `database`-channel notifications (volunteer assigned, campaign rejected/published, funds disbursed, refund resolved), but nothing in the app ever *displayed* them - there was no inbox. "In-app notifications" isn't satisfied by writing rows nobody can see, so this phase adds `/notifications`: a `NotificationList` Livewire component listing `auth()->user()->notifications` with per-item and mark-all "mark as read" actions, plus an unread-count badge on the authenticated nav bar.
+- Added the two notifications spec §6 Phase 11 explicitly names that weren't covered yet: `DonationReceivedNotification` (to the **campaign's Seeker**, distinct from `DonationReceiptNotification` which goes to the **donor** - wired into `DonationCompletionService::complete()`) and `CampaignForwardedNotification` (to the Seeker when `CampaignVerificationService::forwardToExecutive()` runs, closing a gap where a Seeker previously heard nothing between "volunteer assigned" and "published/rejected").
+- **SMS built as a real integration point, not a stub comment**: `App\Contracts\SmsGateway` + `LogSmsGateway` (writes to the log instead of sending, since spec marks SMS as optional and no provider credentials exist) + a custom Laravel notification channel (`App\Notifications\Channels\SmsChannel`) that resolves the bound gateway and calls a notification's `toSms()` method - the same swap-the-binding-later pattern already used for Stripe/ShurjoPay. `CriticalBloodRequestNotification` fires through it via `CriticalBloodAlertService`, which alerts available donors of a matching blood group only when a blood request's urgency is `critical` (spec's literal example) - normal/urgent requests rely on the public listing page instead of interrupting people.
+- Standardized every notification's `toArray()` to include a `message` string key so the generic inbox view doesn't need per-notification-type branching - caught and fixed `RefundRequestResolvedNotification`, which was missing it before this pass.
+- Automated: `tests/Feature/Phase11NotificationsTest.php` (7 tests / 13 assertions) - the two newly-wired notifications firing to the right recipient, a critical blood request alerting only matching *and* available donors (not wrong-blood-group or unavailable ones), normal-urgency requests triggering no alert, a genuine end-to-end SMS channel test (real notification dispatch through the bound gateway, asserting the actual phone number and message content received - not just that a method was called), and the notifications page listing/mark-as-read flow over real Livewire and HTTP calls. Full suite: **149 passed / 397 assertions**.
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
 ## Open Decisions / Follow-ups
 
+- SMS is currently logged, not sent (`LogSmsGateway`) - swap the `SmsGateway` binding in `AppServiceProvider` for a real provider (Twilio, a local BD SMS aggregator, etc.) once the client picks one and provides credentials. All the alerting logic (who gets alerted, when, with what message) is already built and tested against the interface.
 - ShurjoPay refunds are unimplemented (`ShurjoPayGatewayService::refund()` throws) pending real sandbox credentials to confirm the refund API's exact field names - Executive Admin should process ShurjoPay refunds manually outside the system until this is wired up.
 
 - **Stripe & ShurjoPay real credentials — still needed.** Phase 4's donation flow is fully built and tested against a `PaymentGateway` interface, but nothing has been verified against a live sandbox. Once test keys are provided: (1) confirm `ShurjoPayGatewayService`'s field names against a real `get_token`/`secret-pay`/`verification` response (see Phase 4 testing log), (2) set a real Stripe webhook endpoint + `STRIPE_WEBHOOK_SECRET` and do one live end-to-end test donation on each gateway.

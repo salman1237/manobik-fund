@@ -6,6 +6,7 @@ use App\Exceptions\InvalidCampaignTransition;
 use App\Models\Campaign;
 use App\Models\FieldVisitReport;
 use App\Models\User;
+use App\Notifications\CampaignForwardedNotification;
 use App\Notifications\CampaignPublishedNotification;
 use App\Notifications\CampaignRejectedNotification;
 use App\Notifications\VolunteerAssignedNotification;
@@ -101,6 +102,8 @@ class CampaignVerificationService
             ->performedOn($campaign)
             ->causedBy($actor)
             ->log('Forwarded to Executive Admin for final review');
+
+        $campaign->seeker->notify(new CampaignForwardedNotification($campaign));
 
         return $campaign->fresh();
     }

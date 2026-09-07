@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Models\Donation;
 use App\Notifications\DonationReceiptNotification;
+use App\Notifications\DonationReceivedNotification;
 use App\Services\RewardPointsService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -38,10 +39,14 @@ class DonationCompletionService
             $this->rewardPoints->awardForDonation($donation);
         });
 
-        Notification::route('mail', $donation->donor_email)
-            ->notify(new DonationReceiptNotification($donation->fresh()));
+        $donation = $donation->fresh();
 
-        return $donation->fresh();
+        Notification::route('mail', $donation->donor_email)
+            ->notify(new DonationReceiptNotification($donation));
+
+        $donation->campaign?->seeker?->notify(new DonationReceivedNotification($donation));
+
+        return $donation;
     }
 
     public function fail(Donation $donation, ?array $gatewayMeta = null): Donation
