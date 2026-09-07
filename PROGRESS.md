@@ -29,7 +29,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 | 9 | Ambulance Directory | ✅ | `f58cebd` | See Testing Log below |
 | 10 | Emergency Response, Medical Camps & Education Modules | ✅ | `ffdc58e` | See Testing Log below |
 | 11 | Notifications & Communication | ✅ | `3eb65bf` | See Testing Log below |
-| 12 | Analytics, Polish & Deployment | ✅ | (next commit) | See Testing Log below |
+| 12 | Analytics, Polish & Deployment | ✅ | `1b54efd` | See Testing Log below |
 
 **All 12 spec phases are now built and tested (158 automated tests / 440 assertions, all passing).** Remaining real work before this is production-ready: real Stripe/ShurjoPay/SMS credentials (see Open Decisions below) and a live-sandbox verification pass on both payment gateways.
 
