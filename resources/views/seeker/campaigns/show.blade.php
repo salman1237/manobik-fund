@@ -34,6 +34,11 @@
 
             @if ($campaign->isPublic())
                 <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Treatment Tracking</h3>
+                    <livewire:campaigns.submit-treatment-parameter :campaign="$campaign" :key="'parameters-'.$campaign->id" />
+                </div>
+
+                <div>
                     <h3 class="text-lg font-semibold text-gray-900 mb-2">Patient Updates</h3>
                     <livewire:campaigns.post-campaign-update :campaign="$campaign" :key="'updates-'.$campaign->id" />
                 </div>

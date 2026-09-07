@@ -11,6 +11,8 @@
                     <p class="mt-4 text-gray-700 whitespace-pre-line">{{ $campaign->description }}</p>
                 </div>
 
+                <x-campaign-charts :campaign="$campaign" />
+
                 <div>
                     <h2 class="text-lg font-semibold text-gray-900 mb-2">Patient Updates</h2>
                     @forelse ($campaign->updates as $update)

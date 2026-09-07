@@ -127,6 +127,16 @@ class Campaign extends Model implements HasMedia
         return $this->hasMany(Donation::class);
     }
 
+    public function treatmentParameters(): HasMany
+    {
+        return $this->hasMany(TreatmentParameter::class);
+    }
+
+    public function fundUtilizations(): HasMany
+    {
+        return $this->hasMany(FundUtilization::class);
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('cover')->singleFile();
@@ -167,5 +177,67 @@ class Campaign extends Model implements HasMedia
         }
 
         return (int) min(100, round(($this->raised_amount / $this->target_amount) * 100));
+    }
+
+    /**
+     * Shapes verified treatment_parameters + fund_utilization rows into the
+     * chart data the public campaign page renders, keyed off parameter_type
+     * (spec §4.2/§8) rather than a table per illness type:
+     *  - "milestone"     -> a simple list (e.g. "Chemo Cycle 2 of 6")
+     *  - "hospital_days" -> a single running-count timeline stat
+     *  - everything else -> a line series of value-over-time ("vitals")
+     * Only is_verified=true entries are ever included - unverified Seeker
+     * submissions never reach the public page (spec §4.2 anti-fabrication).
+     */
+    public function publicChartData(): array
+    {
+        $verified = $this->treatmentParameters()
+            ->where('is_verified', true)
+            ->orderBy('recorded_at')
+            ->get()
+            ->groupBy(fn (TreatmentParameter $p) => $p->parameter_type);
+
+        $milestones = [];
+        $timeline = [];
+        $vitals = [];
+
+        foreach ($verified as $type => $entries) {
+            $category = $entries->first()->chartCategory();
+
+            match ($category) {
+                'milestone' => $milestones = $entries->map(fn ($e) => [
+                    'label' => $e->label,
+                    'value' => $e->value,
+                    'recorded_at' => $e->recorded_at->toDateString(),
+                ])->all(),
+                'timeline' => $timeline = [
+                    'label' => $entries->last()->label,
+                    'value' => $entries->last()->value,
+                    'unit' => $entries->last()->unit,
+                ],
+                default => $vitals[$type] = [
+                    'label' => $entries->first()->label,
+                    'unit' => $entries->first()->unit,
+                    'points' => $entries->map(fn ($e) => [
+                        'x' => $e->recorded_at->toDateString(),
+                        'y' => is_numeric($e->value) ? (float) $e->value : $e->value,
+                    ])->all(),
+                ],
+            };
+        }
+
+        $fundUtilization = $this->fundUtilizations()
+            ->selectRaw('category, SUM(amount) as total')
+            ->groupBy('category')
+            ->get()
+            ->map(fn ($row) => ['category' => $row->category, 'amount' => (int) $row->total])
+            ->all();
+
+        return [
+            'milestones' => $milestones,
+            'timeline' => $timeline,
+            'vitals' => $vitals,
+            'fundUtilization' => $fundUtilization,
+        ];
     }
 }

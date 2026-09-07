@@ -1,0 +1,95 @@
+@props(['campaign'])
+
+@php($data = $campaign->publicChartData())
+
+@if (empty($data['vitals']) && empty($data['milestones']) && empty($data['timeline']) && empty($data['fundUtilization']))
+    {{-- Nothing verified yet - render nothing rather than an empty chart shell. --}}
+@else
+    <div class="space-y-6" x-data x-init="
+        const charts = {};
+        const renderCharts = () => {
+            Object.values(charts).forEach(c => c.destroy());
+
+            @foreach ($data['vitals'] as $type => $vital)
+                {
+                    const ctx = document.getElementById('vital-chart-{{ $campaign->id }}-{{ $type }}');
+                    if (ctx) {
+                        const points = @js($vital['points']);
+                        charts['{{ $type }}'] = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: points.map(p => p.x),
+                                datasets: [{
+                                    label: @js($vital['label'].($vital['unit'] ? ' ('.$vital['unit'].')' : '')),
+                                    data: points.map(p => p.y),
+                                    borderColor: '#059669',
+                                    backgroundColor: '#05966933',
+                                    tension: 0.2,
+                                }],
+                            },
+                            options: {
+                                plugins: { legend: { display: false } },
+                            },
+                        });
+                    }
+                }
+            @endforeach
+
+            @if (! empty($data['fundUtilization']))
+                {
+                    const ctx = document.getElementById('fund-utilization-chart-{{ $campaign->id }}');
+                    if (ctx) {
+                        charts['fundUtilization'] = new Chart(ctx, {
+                            type: 'pie',
+                            data: {
+                                labels: @js(array_column($data['fundUtilization'], 'category')),
+                                datasets: [{
+                                    data: @js(array_column($data['fundUtilization'], 'amount')),
+                                    backgroundColor: ['#059669', '#0891b2', '#d97706', '#dc2626', '#7c3aed'],
+                                }],
+                            },
+                        });
+                    }
+                }
+            @endif
+        };
+
+        renderCharts();
+        document.addEventListener('livewire:navigated', renderCharts);
+    ">
+        @if (! empty($data['milestones']))
+            <div class="bg-white border border-gray-200 rounded-lg p-5">
+                <h3 class="font-semibold text-gray-900 mb-3">Treatment Milestones</h3>
+                <ul class="space-y-2">
+                    @foreach ($data['milestones'] as $milestone)
+                        <li class="flex items-center justify-between text-sm">
+                            <span class="text-gray-700">{{ $milestone['label'] }}</span>
+                            <span class="text-gray-500">{{ $milestone['value'] }} &middot; {{ \Illuminate\Support\Carbon::parse($milestone['recorded_at'])->format('M j') }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if (! empty($data['timeline']))
+            <div class="bg-white border border-gray-200 rounded-lg p-5 text-center">
+                <p class="text-3xl font-bold text-emerald-700">{{ $data['timeline']['value'] }} {{ $data['timeline']['unit'] }}</p>
+                <p class="text-sm text-gray-500 mt-1">{{ $data['timeline']['label'] }}</p>
+            </div>
+        @endif
+
+        @foreach ($data['vitals'] as $type => $vital)
+            <div class="bg-white border border-gray-200 rounded-lg p-5">
+                <h3 class="font-semibold text-gray-900 mb-3">{{ $vital['label'] }}</h3>
+                <canvas id="vital-chart-{{ $campaign->id }}-{{ $type }}" height="120"></canvas>
+            </div>
+        @endforeach
+
+        @if (! empty($data['fundUtilization']))
+            <div class="bg-white border border-gray-200 rounded-lg p-5">
+                <h3 class="font-semibold text-gray-900 mb-3">Fund Utilization</h3>
+                <canvas id="fund-utilization-chart-{{ $campaign->id }}" height="200"></canvas>
+            </div>
+        @endif
+    </div>
+@endif

@@ -22,7 +22,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 | 2 | Campaign Core (Seeker side) | ✅ | (next commit) | See Testing Log below |
 | 3 | Verification Workflow | ✅ | (next commit) | See Testing Log below |
 | 4 | Public Campaign Pages & Donations | ✅ | (next commit) | See Testing Log below |
-| 5 | Real-Time Medical Parameter Tracking | ⬜ | | |
+| 5 | Real-Time Medical Parameter Tracking | ✅ | (next commit) | See Testing Log below |
 | 6 | Disbursement & Transparency | ⬜ | | |
 | 7 | Reward Points & Refunds | ⬜ | | |
 | 8 | Blood Donation Network | ⬜ | | |
@@ -100,6 +100,18 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - `DonationReceiptNotification` (mail-only, sent via `Notification::route('mail', $donation->donor_email)` so it works for guest donors with no User record) fulfills spec Phase 4's "donation confirmation + email receipt."
 - Automated: `tests/Feature/Phase4PublicCampaignsTest.php` (5 tests) - listing scoped to public statuses only, category filter, search, 404 on non-public campaigns, progress/updates rendering. `tests/Feature/Phase4DonationsTest.php` (9 tests / 23 assertions) - guest and authenticated donation creation for both gateways (with fake `PaymentGateway` bindings, no real API calls), validation, a **real** Stripe webhook signature generated via `Stripe\WebhookSignature::generateSignatureHeader()` (genuine HMAC verification, not mocked), webhook idempotency across duplicate delivery, invalid-signature rejection, and the ShurjoPay return-page flow via `Http::fake()` for both successful and failed verification outcomes. Full suite: **86 passed / 241 assertions**.
 - Manual: booted `php artisan serve`, confirmed `/`, `/campaigns`, and `/campaigns/{slug}` all return 200, render light-only (no `dark` class), and the donation form is present and functional on the detail page.
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
+### Phase 5 — Real-Time Medical Parameter Tracking (2026-09-07)
+
+- `treatment_parameters` and `fund_utilizations` tables/models per spec §5 (the latter's actual write-path — Executive Admin logging entries on disbursement — is Phase 6; the table, model, and public pie-chart rendering are built now so Phase 6 only has to add the write side).
+- Kept the generic key-value model from spec §4.2/§8 intact: no per-illness table, and the chart-rendering layer (`Campaign::publicChartData()`) keys off `parameter_type` alone (via `TreatmentParameter::chartCategory()`) to decide whether an entry is a milestone, a timeline stat (`hospital_days`), or a numeric vitals line-series (everything else - `wbc_count`, `platelet`, `creatinine`, `bilirubin`, `pain_scale`, or any future type with no code change needed).
+- **Anti-fabrication is enforced at the query level, not just the UI**: `publicChartData()` only ever selects `is_verified = true` rows. Verified this directly with a test that creates both an unverified and a verified parameter with distinct labels and asserts the public campaign page shows one and never renders the other's text anywhere in the response - not just that a flag was set correctly on a model.
+- `SubmitTreatmentParameter` (Livewire, on the Seeker's own campaign page): gated by a `TreatmentParameterPolicy::create(User, Campaign)` check requiring both ownership (or staff) and the campaign already being public, mirroring the same "once published" gate `postUpdate` already used in Phase 2 - a Seeker can't backdate progress data onto a campaign still under review.
+- `TreatmentParameterResource` (Filament, `/control/treatment-parameters`): a moderation queue with a single `verify` action (verification_admin/executive_admin/super_admin only) that stamps `is_verified` + `verified_by`; no create/edit/delete - Seekers submit, staff can only approve, nobody edits the record afterward, keeping it an honest audit trail.
+- Installed `chart.js` via npm (bundled through the existing Vite pipeline, not a CDN — this is the app's own asset build, unrelated to the Artifact tool's CDN allowlist) and registered it globally (`window.Chart`) in `resources/js/app.js`. `<x-campaign-charts>` renders line charts for vitals, a milestone list, a hospital-days stat, and (once Phase 6 starts populating `fund_utilizations`) a pie chart - and re-initializes on Livewire's `livewire:navigated` event so charts still render correctly after a `wire:navigate` SPA-style page transition, not just a full page load.
+- Automated: `tests/Feature/Phase5TreatmentTrackingTest.php` (6 tests / 24 assertions) - seeker submission on a published campaign, rejection before publish and for non-owners, the anti-fabrication rendering test above, `publicChartData()`'s grouping/aggregation logic (including `SUM()`-by-category for fund utilization), and Filament verify-action visibility by role. Full suite: **92 passed / 265 assertions**.
+- Manual: booted `php artisan serve`, seeded a campaign with a vital, a milestone, and a fund-utilization entry, confirmed all three render on the real HTTP response (canvas elements present, milestone text visible, no server errors in the log).
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
 ## Open Decisions / Follow-ups
