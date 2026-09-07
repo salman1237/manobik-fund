@@ -65,4 +65,26 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'volunteer',
         ]);
     }
+
+    /**
+     * "Donation Seeker" is not a stored role (spec §3) - it's a capability
+     * unlocked on any Authenticated User once their email is verified.
+     */
+    public function isDonationSeeker(): bool
+    {
+        return $this->hasVerifiedEmail();
+    }
+
+    /**
+     * True for the internal staff roles that operate a Filament panel.
+     */
+    public function isStaff(): bool
+    {
+        return $this->hasAnyRole([
+            'super_admin',
+            'executive_admin',
+            'verification_admin',
+            'volunteer',
+        ]);
+    }
 }

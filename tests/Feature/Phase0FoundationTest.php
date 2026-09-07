@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Support\Facades\Settings;
-use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,8 +13,6 @@ class Phase0FoundationTest extends TestCase
 
     public function test_role_seeder_creates_all_base_roles(): void
     {
-        $this->seed(RoleSeeder::class);
-
         foreach (['super_admin', 'executive_admin', 'verification_admin', 'volunteer', 'user'] as $role) {
             $this->assertTrue(
                 \Spatie\Permission\Models\Role::query()->where('name', $role)->exists(),
@@ -26,8 +23,6 @@ class Phase0FoundationTest extends TestCase
 
     public function test_staff_roles_can_access_the_admin_panel(): void
     {
-        $this->seed(RoleSeeder::class);
-
         $volunteer = User::factory()->create();
         $volunteer->assignRole('volunteer');
 
@@ -38,8 +33,6 @@ class Phase0FoundationTest extends TestCase
 
     public function test_plain_authenticated_users_cannot_access_the_admin_panel(): void
     {
-        $this->seed(RoleSeeder::class);
-
         $donor = User::factory()->create();
         $donor->assignRole('user');
 
