@@ -19,7 +19,7 @@ Legend: ⬜ Not started · 🟨 In progress · ✅ Done & tested · 🚫 Blocked
 |---|---|---|---|---|
 | 0 | Project Foundation (Laravel install, permissions, shield, medialibrary, activitylog, roles seeder, settings table) | ✅ | (next commit) | See Testing Log below |
 | 1 | Auth & Panel Scaffolding | ✅ | (next commit) | See Testing Log below |
-| 2 | Campaign Core (Seeker side) | ⬜ | | |
+| 2 | Campaign Core (Seeker side) | ✅ | (next commit) | See Testing Log below |
 | 3 | Verification Workflow | ⬜ | | |
 | 4 | Public Campaign Pages & Donations | ⬜ | | |
 | 5 | Real-Time Medical Parameter Tracking | ⬜ | | |
@@ -59,6 +59,18 @@ Each phase gets a short entry here when it's marked ✅: what was tested (featur
 - **Test-suite-wide gap found while testing**: Breeze's own generated `RegistrationTest` failed with `RoleDoesNotExist` because it doesn't seed roles, and `AssignDefaultRole` now runs on every registration. Fixed at the root by auto-seeding `RoleSeeder` for every `RefreshDatabase` test via `protected bool $seed = true` / `protected string $seeder = RoleSeeder::class` on the shared `tests/TestCase.php`, since roles are now foundational reference data most user-related tests implicitly depend on - not something each test file should have to remember.
 - Automated: `tests/Feature/Phase1AuthTest.php` — 6 tests covering default-role assignment, role preservation, staff vs. plain-user dashboard redirect, guest redirect, and the email-verification-gated Seeker capability. Full suite: **38 passed / 101 assertions** (includes Breeze's own auth/profile tests, now passing with the auto-seed fix).
 - Manual: booted `php artisan serve`, confirmed `/`, `/register`, `/login` all return 200 with no `dark` class on `<html>`; verified via tinker that a fresh registration gets the `user` role.
+- DB reset to a clean `migrate:fresh --seed` state before commit.
+
+### Phase 2 — Campaign Core, Seeker side (2026-09-07)
+
+- New tables/models: `campaigns` (+ `rejection_reason`, added ahead of Phase 3 since it's cheap to include now and avoids a later ALTER), `campaign_documents`, `campaign_updates` - matches spec §5, `Campaign` implements `HasMedia` (medialibrary) with `cover` (single file) and `gallery` collections for campaign images; `campaign_documents` stores medical/ID/bill uploads as plain file paths on the **`local`** disk (`storage/app/private`, confirmed non-web-accessible) rather than medialibrary, since spec §5 models them as their own reviewable/verifiable table.
+- `CampaignPolicy`: `create` requires `isDonationSeeker()`; `update`/`delete` require both ownership and `draft` status (a Seeker never sees another Seeker's campaign for editing, per spec §3); `postUpdate` requires ownership **and** the campaign already being public - a draft/pending campaign can't receive patient updates yet.
+- `CampaignWizard` Livewire component: 4-step form (basic info -> hospital/medical info -> documents -> banking) at `/seeker/campaigns/create` and `/seeker/campaigns/{campaign}/edit`. Each step persists immediately on "Save & Continue" (draft/save-and-continue, spec Phase 2), so a Seeker can leave mid-form and resume later without losing data. Final step flips `status` from `draft` to `pending_verification` - queuing it for the Phase 3 verification pipeline.
+- Money stored as integer poisha (BDT smallest unit) per spec §8; the wizard converts the human-entered Taka amount on save and back on load.
+- `bank_account_details` uses the `encrypted:array` cast per spec §8 - verified directly against the raw DB column in a test (`test_bank_account_details_are_encrypted_at_rest`), not just through the model accessor, since a passing model-level assertion wouldn't catch a cast that decrypts correctly but was never actually encrypting.
+- `Campaign::progressPercentage()` computes live from `raised_amount`/`target_amount` on every call, never cached/stored - matches the client's "no fake/static campaign data, must be live" feedback logged in the spec's Client Decisions section.
+- `SeekerDashboard` and seeker `show` page scope every query to `seeker_id = auth()->id()`; verified with a test that one seeker cannot see another's campaign title on the dashboard.
+- Automated: `tests/Feature/Phase2CampaignTest.php` - 8 tests / 27 assertions: unverified-seeker rejection, HTTP-level page rendering (not just component-level, to catch Blade/layout wiring bugs), full 4-step wizard walkthrough (asserts DB state after every step, not just the final one), encryption-at-rest, cross-seeker edit denial, post-draft edit lockout, publish-gated update posting, dashboard scoping. Full suite: **45 passed / 123 assertions**.
 - DB reset to a clean `migrate:fresh --seed` state before commit.
 
 ## Open Decisions / Follow-ups
