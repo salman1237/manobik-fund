@@ -219,7 +219,23 @@ Client provided real ShurjoPay sandbox credentials (`sp_sandbox`, base URL `http
 
 All other field names (request and response) matched the original implementation exactly on the first live call - `checkout_url`, `sp_order_id`, `sp_code`, the verification-endpoint's list-wrapped response, etc. Added two regression tests asserting the *exact* URLs called (not wildcard-matched) so this class of bug can't silently reappear. Full local smoke test against the real sandbox (`get_token` → `secret-pay` → `verification`) confirmed working end-to-end for checkout creation and status verification; completing an actual payment through the hosted checkout page (to confirm `sp_code: 1000` is the live "paid" code) still needs a human click-through since it requires choosing a payment method in the browser. 159 tests passing.
 
+### Staff User Management (2026-09-08)
+
+Client hit a dead end assigning a Volunteer to a campaign from the live panel - the dropdown was empty, because there was no way to *create* a Volunteer account. Root cause: spec §12 called for a `UserResource` in Filament (`RoleResource` itself is provided by filament-shield at `/control/shield/roles`), but it was never built in Phase 0-12 - only the one super_admin account (created manually via tinker during deployment) existed.
+
+Also surfaced the same day: that super_admin account's own `/seeker/campaigns/create` route 403'd, because campaign creation requires a verified email and production mail is still `MAIL_MAILER=log` (verification emails never actually get delivered, just logged) - manually verified that one account directly in the database as an immediate unblock, but this affects **every** real signup until real SMTP is configured (see Open Decisions).
+
+Built `app/Filament/Resources/UserResource.php` (+ `UserPolicy`, gated to `super_admin` only since this can grant elevated access):
+
+- Create/edit staff accounts (name, email, password, role - Volunteer/Verification Admin/Executive Admin/Super Admin) from `/control/users`.
+- Staff accounts created this way are auto-verified on creation (`CreateUser::mutateFormDataBeforeCreate`) - they don't need to click a link that would only ever land in a log file.
+- `UserPolicy::delete()` blocks a super_admin from deleting their own account (would otherwise be able to lock the platform's only super_admin out entirely).
+- Added `email_verified_at` to `User::$fillable` (needed for the above; wasn't previously mass-assignable).
+- 6 new tests: access denied for non-super_admin roles, staff creation end-to-end (role assigned + pre-verified + `isStaff()` true), and the self-delete policy edge case. Full suite: **165 passed / 456 assertions**.
+
 ## Open Decisions / Follow-ups
+
+- **Real SMTP still needed.** Production `MAIL_MAILER=log` means no verification, receipt, or notification email actually reaches anyone - it only gets logged. This blocks every real donor/seeker from completing email verification (and therefore from starting a campaign), not just the incident above. Needs a real provider (Gmail SMTP, or a transactional service like Resend/Postmark - both already have config slots in `config/services.php`) before this goes live for real users.
 
 - SMS is currently logged, not sent (`LogSmsGateway`) - swap the `SmsGateway` binding in `AppServiceProvider` for a real provider (Twilio, a local BD SMS aggregator, etc.) once the client picks one and provides credentials. All the alerting logic (who gets alerted, when, with what message) is already built and tested against the interface.
 - ShurjoPay refunds are still unimplemented (`ShurjoPayGatewayService::refund()` throws) - the checkout/verification flow was confirmed against the live sandbox, but a refund endpoint hasn't been; refusing to guess at fields for an operation that moves real money. Executive Admin should process ShurjoPay refunds manually outside the system until this is wired up and verified the same way.
