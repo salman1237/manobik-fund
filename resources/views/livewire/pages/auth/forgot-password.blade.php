@@ -45,11 +45,13 @@ new #[Layout('layouts.guest')] class extends Component
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form wire:submit="sendPasswordResetLink" class="flex flex-col gap-4">
+    {{-- See login.blade.php for why this exists (mobile autofill vs Livewire's event-driven wire:model sync). --}}
+    <form wire:submit="sendPasswordResetLink" x-data class="flex flex-col gap-4"
+          x-on:submit.capture="$wire.set('email', $refs.email.value, false)">
         <!-- Email Address -->
         <div>
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="email" id="email" class="block mt-2 w-full" type="email" name="email" required autofocus />
+            <x-text-input wire:model="email" x-ref="email" id="email" class="block mt-2 w-full" type="email" name="email" required autofocus />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 

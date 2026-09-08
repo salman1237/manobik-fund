@@ -233,6 +233,11 @@ Built `app/Filament/Resources/UserResource.php` (+ `UserPolicy`, gated to `super
 - Added `email_verified_at` to `User::$fillable` (needed for the above; wasn't previously mass-assignable).
 - 6 new tests: access denied for non-super_admin roles, staff creation end-to-end (role assigned + pre-verified + `isStaff()` true), and the self-delete policy edge case. Full suite: **165 passed / 456 assertions**.
 
+### Mobile Autofill vs. Livewire's wire:model (2026-09-08)
+
+Client reported "The email field is required" on the login page while the email was visibly filled in (mobile Chrome, saved-password autofill). Root cause: `wire:model` syncs on the browser's `input`/`change` events, but Android Chrome's native Autofill Framework can fill a field's value without firing either - so Livewire's copy of `form.email` stayed empty even though the field displayed the autofilled value, and the server received nothing. Not specific to this redesign; would have existed on the old markup too, just more likely to surface once real users started logging in from phones.
+
+Fixed on login, register, and forgot-password (the three forms most likely to be autofilled) by adding an Alpine `x-on:submit.capture` handler that forces a read of the actual DOM input values into the Livewire component right before submission, bypassing the broken event-driven sync entirely. 165 tests still passing (pure client-side fix, no new test needed - nothing server-side changed).
 ## Open Decisions / Follow-ups
 
 - **Real SMTP still needed.** Production `MAIL_MAILER=log` means no verification, receipt, or notification email actually reaches anyone - it only gets logged. This blocks every real donor/seeker from completing email verification (and therefore from starting a campaign), not just the incident above. Needs a real provider (Gmail SMTP, or a transactional service like Resend/Postmark - both already have config slots in `config/services.php`) before this goes live for real users.

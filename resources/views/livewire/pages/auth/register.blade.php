@@ -40,18 +40,31 @@ new #[Layout('layouts.guest')] class extends Component
     <h1 class="font-serif text-3xl font-semibold text-ink mb-2">{{ __('Create your account') }}</h1>
     <p class="text-sm text-ink-faint mb-9">{{ __('Join Manobik Fund to donate or start a campaign.') }}</p>
 
-    <form wire:submit="register" class="flex flex-col gap-4">
+    {{--
+        See login.blade.php for why: mobile browser autofill (Android
+        Chrome's native Autofill Framework especially) can fill these
+        inputs without firing an event Livewire's wire:model listens for,
+        leaving $wire's copy empty even though the field looks filled.
+        This forces a read of the actual DOM values right before submit.
+    --}}
+    <form wire:submit="register" x-data class="flex flex-col gap-4"
+          x-on:submit.capture="
+              $wire.set('name', $refs.name.value, false);
+              $wire.set('email', $refs.email.value, false);
+              $wire.set('password', $refs.password.value, false);
+              $wire.set('password_confirmation', $refs.password_confirmation.value, false);
+          ">
         <!-- Name -->
         <div>
             <x-input-label for="name" :value="__('Name')" />
-            <x-text-input wire:model="name" id="name" class="block mt-2 w-full" type="text" name="name" required autofocus autocomplete="name" />
+            <x-text-input wire:model="name" x-ref="name" id="name" class="block mt-2 w-full" type="text" name="name" required autofocus autocomplete="name" />
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
         <!-- Email Address -->
         <div>
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="email" id="email" class="block mt-2 w-full" type="email" name="email" required autocomplete="username" />
+            <x-text-input wire:model="email" x-ref="email" id="email" class="block mt-2 w-full" type="email" name="email" required autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
@@ -59,7 +72,7 @@ new #[Layout('layouts.guest')] class extends Component
         <div>
             <x-input-label for="password" :value="__('Password')" />
 
-            <x-text-input wire:model="password" id="password" class="block mt-2 w-full"
+            <x-text-input wire:model="password" x-ref="password" id="password" class="block mt-2 w-full"
                             type="password"
                             name="password"
                             required autocomplete="new-password" />
@@ -71,7 +84,7 @@ new #[Layout('layouts.guest')] class extends Component
         <div>
             <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
 
-            <x-text-input wire:model="password_confirmation" id="password_confirmation" class="block mt-2 w-full"
+            <x-text-input wire:model="password_confirmation" x-ref="password_confirmation" id="password_confirmation" class="block mt-2 w-full"
                             type="password"
                             name="password_confirmation" required autocomplete="new-password" />
 

@@ -31,11 +31,26 @@ new #[Layout('layouts.guest')] class extends Component
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form wire:submit="login" class="flex flex-col gap-4">
+    {{--
+        Mobile browsers (Android Chrome's native Autofill Framework in
+        particular) can fill saved credentials into these inputs without
+        ever firing an 'input'/'change' event - which is what Livewire's
+        wire:model relies on to sync. That leaves $wire's copy of
+        form.email/form.password empty even though the field visually
+        shows the autofilled value, so the server sees "field is
+        required" on submit. x-on:submit.capture forces a read of the
+        actual DOM value into the Livewire model right before submission,
+        bypassing the event-driven sync entirely.
+    --}}
+    <form wire:submit="login" x-data class="flex flex-col gap-4"
+          x-on:submit.capture="
+              $wire.set('form.email', $refs.email.value, false);
+              $wire.set('form.password', $refs.password.value, false);
+          ">
         <!-- Email Address -->
         <div>
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="form.email" id="email" class="block mt-2 w-full" type="email" name="email" required autofocus autocomplete="username" />
+            <x-text-input wire:model="form.email" x-ref="email" id="email" class="block mt-2 w-full" type="email" name="email" required autofocus autocomplete="username" />
             <x-input-error :messages="$errors->get('form.email')" class="mt-2" />
         </div>
 
@@ -50,7 +65,7 @@ new #[Layout('layouts.guest')] class extends Component
                 @endif
             </div>
 
-            <x-text-input wire:model="form.password" id="password" class="block mt-2 w-full"
+            <x-text-input wire:model="form.password" x-ref="password" id="password" class="block mt-2 w-full"
                             type="password"
                             name="password"
                             required autocomplete="current-password" />
