@@ -330,7 +330,9 @@ class DemoDataSeeder extends Seeder
                 'donor_email' => $donor->email ?? 'guest'.random_int(1000, 9999).'@manobikfund.demo',
                 'amount' => $amountTaka * 100,
                 'currency' => 'BDT',
-                'gateway' => fake()->randomElement([Donation::GATEWAY_SHURJOPAY, Donation::GATEWAY_STRIPE]),
+                // No Faker here on purpose - fakerphp/faker is a require-dev
+                // package, absent from production's --no-dev composer install.
+                'gateway' => random_int(0, 1) === 0 ? Donation::GATEWAY_SHURJOPAY : Donation::GATEWAY_STRIPE,
                 'transaction_id' => (string) Str::uuid(),
                 'status' => Donation::STATUS_PENDING,
                 'is_anonymous' => $isAnonymous,
