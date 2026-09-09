@@ -20,6 +20,13 @@ class StaffOverview extends BaseWidget
     // sees rather than buried under the charts.
     protected static ?int $sort = -10;
 
+    // Filament widgets lazy-load by default via a follow-up Livewire AJAX
+    // request. UserResource::getUrl() needs the current panel resolved,
+    // which isn't reliably available on that separate request cycle -
+    // rendering eagerly (in the same request as the rest of the page,
+    // which we know has panel context) avoids that failure mode entirely.
+    protected static bool $isLazy = false;
+
     public static function canView(): bool
     {
         return Auth::user()?->hasRole('super_admin') ?? false;
